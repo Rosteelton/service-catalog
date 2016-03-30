@@ -53,25 +53,20 @@ object App extends App {
     }
   }
 
-  def updateService(s: Option[Service], host: String, port: Int, name: String, holderEmail: Option[String], environment: Option[String]):Unit = {
-    s match {
-      case Some(s) => {
-        sql"update service set host=${host}, port=${port}, name=${name}, holderEmail=${holderEmail}, environment=${environment} where host=${s.host} AND port=${s.port}".update.apply()
-        println("Success!")
-      }
-      case None => println("Please write another one")
-    }
+  def updateService(s: Service): Unit = {
+    val s2 = StdIn.readLine("host: ")
+    val s3 = StdIn.readLine("port: ")
+    val s4 = StdIn.readLine("name: ")
+    val s5 = StdIn.readLine("holderEmail: ")
+    val s6 = StdIn.readLine("environment: ")
+    sql"update service set host=${s2}, port=${s3.toInt}, name=${s4}, holderEmail=${s5}, environment=${s6} where host=${s.host} AND port=${s.port}".update.apply()
+    println("Success!")
   }
 
-  def findServiceByHostAndPort(s: String): Unit = {
-    val tmp: Option[Service] = tryToFindServiceByHostAndPort(s)
-    tmp match {
-      case Some(tmp) => {
-        println("The service was found:")
-        println(tmp.toString)
-      }
-      case None => println("The service wasn't found:")
-    }
+
+  def delete(s: Service): Unit = {
+    sql"delete from service where host=${s.host} and port=${s.port}".update().apply()
+    println("Success!")
   }
 
   def addNewService(host: String, port: Int, name: String, holderEmail: Option[String], environment: Option[String]) = {
@@ -95,6 +90,7 @@ object App extends App {
       println("1 - add new service")
       println("2 - find some service")
       println("3 - update some service")
+      println("4 - delete some service")
       println("exit - exit application")
 
       StdIn.readLine() match {
@@ -109,21 +105,25 @@ object App extends App {
         case "2" => {
           println("Write host:port to find, for example: qiwi.com:8080")
           val s1 = StdIn.readLine("host:port ")
-          findServiceByHostAndPort(s1)
+          tryToFindServiceByHostAndPort(s1)
+
         }
         case "3" => {
           println("Write host:port combination to update, for example: qiwi.com:8080")
           val s1 = StdIn.readLine("host:port ")
           val tmp = tryToFindServiceByHostAndPort(s1)
           tmp match {
-            case Some(tmp) => {
-              val s2 = StdIn.readLine("host: ")
-              val s3 = StdIn.readLine("port: ")
-              val s4 = StdIn.readLine("name: ")
-              val s5 = StdIn.readLine("holderEmail: ")
-              val s6 = StdIn.readLine("environment: ")
-              updateService(Option(tmp), s2, s3.toInt, s4, Option(s5), Option(s6))
-            }
+            case Some(tmp) => updateService(tmp)
+            case None => println("Failed!")
+          }
+        }
+        case "4" => {
+          println("Write host:port combination to delete, for example: qiwi.com:8080")
+          val s1 = StdIn.readLine("host:port ")
+          val tmp = tryToFindServiceByHostAndPort(s1)
+          tmp match {
+            case Some(tmp) => delete(tmp)
+            case None => println("Failed!")
           }
         }
         case "exit" => throw new Exception("By")

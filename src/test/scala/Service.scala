@@ -8,3 +8,4 @@ object Service extends SQLSyntaxSupport[Service] {
   def apply(rs: WrappedResultSet): Service =
     new Service(rs.string("host"), rs.int("port"), rs.string("name"), rs.stringOpt("holderEmail"), rs.stringOpt("environment"))
 }
+

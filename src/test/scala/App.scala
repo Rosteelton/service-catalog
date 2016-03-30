@@ -24,13 +24,23 @@ object App extends App {
   //sql" insert into service values ('api-m1-01.qiwi.com', 8000, 'QIWI API', 'd.mikhaylov@qiwi.ru', 'Production')".update().apply()
   */
 
-  def tryToFindService(s: String): Option[Service] = {
+  def tryToFindServiceByHostAndPort(s: String): Option[Service] = {
     try {
       val hostAndPort: Array[String] = s.split(":")
       val host = hostAndPort(0)
       val port = hostAndPort(1).toInt
       val service = sql"select * from service where host = ${host} AND port = ${port}".map(rs => Service(rs)).single.apply()
-      service
+      service match {
+        case Some(service) => {
+          println("The service was found:")
+          println(service.toString)
+          Option(service)
+        }
+        case None => {
+          println("The service wasn't found:")
+          None
+        }
+      }
     } catch {
       case e: ArrayIndexOutOfBoundsException => {
         println("Error! Please write someth like this: api-m1-01.qiwi.com:8000")
@@ -43,20 +53,18 @@ object App extends App {
     }
   }
 
-  def updateServiceByHostAndPort(s: String, host: String, port: Int, name: String, holderEmail: Option[String], environment: Option[String]) = {
-    val tmp: Option[Service] = tryToFindService(s)
-    tmp match {
-      case Some(tmp) => {
-        println("The service was found:")
-        println(tmp.toString)
-        sql"update service set host=${name}, port=${port}, name=${name}, holderEmail=${holderEmail}, environment=${environment} where host=${tmp.host} AND port=${tmp.port}".update.apply()
+  def updateService(s: Option[Service], host: String, port: Int, name: String, holderEmail: Option[String], environment: Option[String]):Unit = {
+    s match {
+      case Some(s) => {
+        sql"update service set host=${host}, port=${port}, name=${name}, holderEmail=${holderEmail}, environment=${environment} where host=${s.host} AND port=${s.port}".update.apply()
+        println("Success!")
       }
-      case None => println("The service wasn't found:")
+      case None => println("Please write another one")
     }
   }
 
   def findServiceByHostAndPort(s: String): Unit = {
-    val tmp: Option[Service] = tryToFindService(s)
+    val tmp: Option[Service] = tryToFindServiceByHostAndPort(s)
     tmp match {
       case Some(tmp) => {
         println("The service was found:")
@@ -106,15 +114,20 @@ object App extends App {
         case "3" => {
           println("Write host:port combination to update, for example: qiwi.com:8080")
           val s1 = StdIn.readLine("host:port ")
-          val s2 = StdIn.readLine("host: ")
-          val s3 = StdIn.readLine("port: ")
-          val s4 = StdIn.readLine("name: ")
-          val s5 = StdIn.readLine("holderEmail: ")
-          val s6 = StdIn.readLine("environment: ")
-          updateServiceByHostAndPort(s1, s2, s3.toInt, s4, Option(s5), Option(s6))
+          val tmp = tryToFindServiceByHostAndPort(s1)
+          tmp match {
+            case Some(tmp) => {
+              val s2 = StdIn.readLine("host: ")
+              val s3 = StdIn.readLine("port: ")
+              val s4 = StdIn.readLine("name: ")
+              val s5 = StdIn.readLine("holderEmail: ")
+              val s6 = StdIn.readLine("environment: ")
+              updateService(Option(tmp), s2, s3.toInt, s4, Option(s5), Option(s6))
+            }
+          }
         }
         case "exit" => throw new Exception("By")
-        case _ => println("Not correct string")
+        case _ => println("That string is incorrect")
       }
     }
   } catch {

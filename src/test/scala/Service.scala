@@ -10,8 +10,8 @@ object Environment {
 
 
 case class Service(host: String, port: Int, name: String, holderEmail: String, environment: Environment) {
-  override def toString: String = {
-    "host: " + this.host + " |port: " + this.port + " |name: " + this.name + " |holderEmail: "+ this.holderEmail.toString + " |environment: " + this.environment
+ override def toString: String = {
+   "host: " + this.host + " |port: " + this.port + " |name: " + this.name + " |holderEmail: "+ this.holderEmail.toString + " |environment: " + this.environment
   }
 }
 object Service {

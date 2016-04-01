@@ -1,3 +1,7 @@
+import java.io.{BufferedReader, BufferedWriter, File, FileWriter}
+import java.text.SimpleDateFormat
+import java.util.Calendar
+
 import UserCommand._
 import scalikejdbc._
 
@@ -42,9 +46,11 @@ object App extends App {
   // sql" insert into service values ('api-m1-01.qiwi.com', 8000, 'QIWI API', 'd.mikhaylov@qiwi.ru', 'Production')".update().apply() //insert sql sample
 
 
-
-  def printService(service: Service) = println(service.toString)
-
+  def printServices(service: List[Service]) = {
+    for (s <- service) {
+      println(s.toString)
+    }
+  }
   def environmentToString(env: Environment): String = {
     env match {
       case Environment.Production => "Production"
@@ -53,12 +59,38 @@ object App extends App {
     }
   }
 
+def saveCSVFile(services: List[Service]) = {
+  val data = Calendar.getInstance().getTime
+  val dateFormat = new SimpleDateFormat("dd.MM.yyyy_H:mm:ss")
+  val file = new File("/home/solovyev/Documents/csvfiles/"+dateFormat.format(data)+".csv")
+  val bw = new BufferedWriter(new FileWriter(file))
+  for (service <- services){
+    bw.write(service.host+";"+service.port+";"+service.name+";"+service.holderEmail+";"+service.environment.toString+"\n")
+  }
+  bw.close()
+  println(dateFormat.format(data)+" successfully created!")
+  handleUserCommand
+  }
+
+
+  def readShowCommand(service: List[Service]): Unit = {
+    StdIn.readLine("Type \"1\" for screen showing \nType \"2\" for save CSV file\nType \"3\" for save JSON file\nType \"4\" don't show result  ") match {
+      case "1" =>
+        printServices(service)
+        handleUserCommand
+     case "2" => saveCSVFile(service)
+      //case "3" => saveJSONFile(service)
+      case "4" => handleUserCommand
+      case _ => readShowCommand(service)
+    }
+  }
+
   def handleAddServiceCommand(command: UserCommand.AddService): Unit = {
     val s = new Service(command.host, command.port, command.name, command.holderEmail, command.environment)
     Try(sql" insert into service values (${s.host}, ${s.port}, ${s.name}, ${s.holderEmail} , ${environmentToString(s.environment)})".update().apply()) match {
       case Success(some) =>
         println("Success!")
-        handleUserCommand
+        readShowCommand(List(s))
       case Failure(_) =>
         println("This service already existed!")
         handleUserCommand
@@ -77,9 +109,8 @@ object App extends App {
     sql"select * from service where host = ${command.host} AND port = ${command.port}".map(rs => Service(rs)).single.apply() match {
       case Some(service) =>
         println("Service was found!")
-        printService(service)
-        handleUserCommand
-      case None =>
+        readShowCommand(List(service))
+        case None =>
         println("Service wasn't found!")
         handleUserCommand
     }
@@ -96,7 +127,7 @@ object App extends App {
         println("Service was found!")
         sql"update service set host=${com.host}, port=${com.port}, name=${com.name}, holderEmail=${com.holderEmail}, environment=${environmentToString(com.environment)} where host=${com.hostToUpdate} AND port=${com.portToUpdate}".update.apply()
         println("Service was updated")
-        handleUserCommand
+        readShowCommand(List(s))
       case None =>
         println("Service wasn't found!")
         handleUserCommand
@@ -141,10 +172,7 @@ object App extends App {
     }
   }
 
-  def showAllServices = {
-    sql"select * from service".map(rs => Service(rs)).list.apply().foreach(println _)
-    handleUserCommand
-  }
+  def showAllServices: Unit = readShowCommand(sql"select * from service".map(rs => Service(rs)).list.apply())
 
   def handleUserCommand: Unit = {
     readUserCommand match {
@@ -153,7 +181,7 @@ object App extends App {
       case com: UpdateService => handleUpdateServiceCommand(com)
       case com: DeleteService => handleDeleteServiceCommand(com)
       case UserCommand.ShowAll => showAllServices
-       case UserCommand.Exit => System.exit(0)
+      case UserCommand.Exit => System.exit(0)
     }
   }
 

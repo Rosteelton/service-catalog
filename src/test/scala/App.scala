@@ -1,28 +1,16 @@
-import UserCommand._
 import scalikejdbc._
-import FileHandler._
-import scala.io.StdIn
-import scala.util.{Failure, Success, Try}
 import UserCommandHandler._
 
 sealed trait UserCommand
-
 object UserCommand {
-
   case class AddService(host: String, port: Int, name: String, holderEmail: String, environment: Environment) extends UserCommand
-
   case class FindService(host: String, port: Int) extends UserCommand
-
   case class UpdateService(hostToUpdate: String, portToUpdate: Int, host: String, port: Int, name: String, holderEmail: String, environment: Environment) extends UserCommand
-
   case class DeleteService(host: String, port: Int) extends UserCommand
-
   case object ShowAll extends UserCommand
-
+  case object ImportService extends UserCommand
   case object Exit extends UserCommand
-
 }
-
 
 object App extends App {
 
@@ -44,9 +32,6 @@ object App extends App {
   //      """.execute.apply()
   //
   // sql" insert into service values ('api-m1-01.qiwi.com', 8000, 'QIWI API', 'd.mikhaylov@qiwi.ru', 'Production')".update().apply() //insert sql sample
-
-
-
 
   // PROGRAM START POINT
   println("Hello!")

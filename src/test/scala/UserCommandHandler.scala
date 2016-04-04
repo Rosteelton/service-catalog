@@ -24,14 +24,16 @@ object UserCommandHandler {
   }
 
   def readShowCommand(service: List[Service]): Unit = {
-    StdIn.readLine("Type \"1\" for screen showing \nType \"2\" for save CSV file\nType \"3\" for save JSON file\nType \"4\" don't show result  ") match {
+    StdIn.readLine("Type \"1\" for screen showing \nType \"2\" for save CSV file\nType \"3\" for save JSON file\nType \"4\" don't show result\n") match {
       case "1" =>
         printServices(service)
         handleUserCommand
-      case "2" => saveCSVFile(service)
-      case "3" => saveJSONFile(service)
+      case "2" => saveCsvFile(service)
+      case "3" => saveJsonFile(service)
       case "4" => handleUserCommand
-      case _ => readShowCommand(service)
+      case _ =>
+        println("Wrong number!")
+        readShowCommand(service)
     }
   }
 
@@ -45,6 +47,19 @@ object UserCommandHandler {
         println("This service already existed!")
         handleUserCommand
     }
+  }
+
+  def handleAddServiceCommand(services: List[Service]): Unit = {
+    for (s <- services)
+      {
+        val serv = new Service(s.host, s.port, s.name, s.holderEmail, s.environment)
+        Try(sql" insert into service values (${s.host}, ${s.port}, ${s.name}, ${s.holderEmail} , ${environmentToString(s.environment)})".update().apply()) match {
+          case Success(some) =>
+          case Failure(_) => printf("%s %d already existed!\n",s.host,s.port)
+        }
+      }
+    println("Finished!")
+    handleUserCommand
   }
 
   def readAddServiceCommand: UserCommand.AddService =
@@ -109,6 +124,7 @@ object UserCommandHandler {
     println("3 - update some service   |")
     println("4 - delete some service   |")
     println("5 - catalog of services   |")
+    println("6 - import cat from file  |")
     println("exit - exit application   |")
     println("---------------------------\n")
     StdIn.readLine() match {
@@ -117,20 +133,40 @@ object UserCommandHandler {
       case "3" => readUpdateServiceCommand
       case "4" => readDeleteServiceCommand
       case "5" => ShowAll
+      case "6" => ImportService
       case "exit" => UserCommand.Exit
       case _ => readUserCommand
     }
   }
 
-  def showAllServices: Unit = readShowCommand(sql"select * from service".map(rs => Service(rs)).list.apply())
+  def showAllServices = readShowCommand(sql"select * from service".map(rs => Service(rs)).list.apply())
 
-  def handleUserCommand: Unit = {
+
+
+  def handleImportServiceCommand(services: List[Service]) = {
+
+  }
+
+  def readImportServiceCommand = {
+    println("Choose type of the file:")
+    StdIn.readLine("Type \"1\" for CSV file \nType \"2\" for JSON file\nType \"exit\" for quit\n") match {
+     // case "1" => importCsvFile
+      case "2" => handleAddServiceCommand(importJsonFile)
+      case _ =>
+        println("Wrong number")
+        handleUserCommand
+    }
+  }
+
+
+  def handleUserCommand:Unit = {
     readUserCommand match {
       case com: AddService => handleAddServiceCommand(com)
       case com: FindService => handleFindServiceCommand(com)
       case com: UpdateService => handleUpdateServiceCommand(com)
       case com: DeleteService => handleDeleteServiceCommand(com)
       case UserCommand.ShowAll => showAllServices
+      case UserCommand.ImportService => readImportServiceCommand
       case UserCommand.Exit => System.exit(0)
     }
   }

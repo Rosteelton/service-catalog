@@ -56,7 +56,7 @@ object MyJsonProtocol extends DefaultJsonProtocol {
   implicit object ServiceJsonFormat extends RootJsonFormat[Service] {
 
     def write(s: Service) = JsObject(
-      "host" -> JsString(s.name),
+      "host" -> JsString(s.host),
       "port" -> JsNumber(s.port),
       "name" -> JsString(s.name),
       "holderEmail" -> JsString(s.holderEmail),

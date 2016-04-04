@@ -1,10 +1,11 @@
-import java.io.{BufferedReader, BufferedWriter, File, FileWriter}
+import java.io.{BufferedWriter, File, FileWriter}
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
 import UserCommand._
 import scalikejdbc._
-
+import spray.json._
+import MyJsonProtocol._
 import scala.io.StdIn
 import scala.util.{Failure, Success, Try}
 
@@ -26,11 +27,14 @@ object UserCommand {
 
 }
 
+
 object App extends App {
 
   Class.forName("com.mysql.jdbc.Driver")
   ConnectionPool.singleton("jdbc:mysql://localhost:3306/services_catalog", "root", "12345")
   implicit val session = AutoSession
+
+  GlobalSettings.loggingSQLAndTime = new LoggingSQLAndTimeSettings(enabled = false)
 
   //   sql"""
   //   CREATE TABLE IF NOT EXISTS service (
@@ -47,10 +51,14 @@ object App extends App {
 
 
   def printServices(service: List[Service]) = {
+    println()
+    println("HOST                                    PORT      NAME                                    EMAIL                                   ENVIRONMENT")
+    println("---------------------------------------------------------------------------------------------------------------------------------------------")
     for (s <- service) {
       println(s.toString)
     }
   }
+
   def environmentToString(env: Environment): String = {
     env match {
       case Environment.Production => "Production"
@@ -59,17 +67,30 @@ object App extends App {
     }
   }
 
-def saveCSVFile(services: List[Service]) = {
-  val data = Calendar.getInstance().getTime
-  val dateFormat = new SimpleDateFormat("dd.MM.yyyy_H:mm:ss")
-  val file = new File("/home/solovyev/Documents/csvfiles/"+dateFormat.format(data)+".csv")
-  val bw = new BufferedWriter(new FileWriter(file))
-  for (service <- services){
-    bw.write(service.host+";"+service.port+";"+service.name+";"+service.holderEmail+";"+service.environment.toString+"\n")
+
+  def saveJSONFile(services: List[Service]) = {
+    val data = Calendar.getInstance().getTime
+    val dateFormat = new SimpleDateFormat("dd.MM.yyyy_H:mm:ss")
+    val file = new File("/home/solovyev/Documents/jsonfiles/" + dateFormat.format(data) + ".json")
+    val bw = new BufferedWriter(new FileWriter(file))
+    val jsonDoc = services.toJson.prettyPrint
+    bw.write(jsonDoc)
+    bw.close()
+    println("\n"+dateFormat.format(data) + " successfully created!")
+    handleUserCommand
   }
-  bw.close()
-  println(dateFormat.format(data)+" successfully created!")
-  handleUserCommand
+
+  def saveCSVFile(services: List[Service]) = {
+    val data = Calendar.getInstance().getTime
+    val dateFormat = new SimpleDateFormat("dd.MM.yyyy_H:mm:ss")
+    val file = new File("/home/solovyev/Documents/csvfiles/" + dateFormat.format(data) + ".csv")
+    val bw = new BufferedWriter(new FileWriter(file))
+    for (service <- services) {
+      bw.write(service.host + ";" + service.port + ";" + service.name + ";" + service.holderEmail + ";" + service.environment.toString + "\n")
+    }
+    bw.close()
+    println("\n"+dateFormat.format(data) + " successfully created!")
+    handleUserCommand
   }
 
 
@@ -78,8 +99,8 @@ def saveCSVFile(services: List[Service]) = {
       case "1" =>
         printServices(service)
         handleUserCommand
-     case "2" => saveCSVFile(service)
-      //case "3" => saveJSONFile(service)
+      case "2" => saveCSVFile(service)
+      case "3" => saveJSONFile(service)
       case "4" => handleUserCommand
       case _ => readShowCommand(service)
     }
@@ -110,7 +131,7 @@ def saveCSVFile(services: List[Service]) = {
       case Some(service) =>
         println("Service was found!")
         readShowCommand(List(service))
-        case None =>
+      case None =>
         println("Service wasn't found!")
         handleUserCommand
     }
@@ -158,7 +179,7 @@ def saveCSVFile(services: List[Service]) = {
     println("2 - find some service     |")
     println("3 - update some service   |")
     println("4 - delete some service   |")
-    println("5 - show all services     |")
+    println("5 - catalog of services   |")
     println("exit - exit application   |")
     println("---------------------------\n")
     StdIn.readLine() match {

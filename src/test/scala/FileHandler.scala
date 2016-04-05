@@ -6,8 +6,9 @@ import UserCommandHandler._
 import spray.json._
 import MyJsonProtocol._
 
-import scala.io.StdIn
-import scala.util.{Try,Success,Failure}
+import scala.collection.mutable.ListBuffer
+import scala.io.{Source, StdIn}
+import scala.util.{Failure, Success, Try}
 
 object FileHandler {
 
@@ -50,18 +51,43 @@ object FileHandler {
     else {
       println("File was found!")
       val fileLines = io.Source.fromFile(file).getLines().mkString
-        Try(fileLines.parseJson) match {
-          case Success(js) =>
-            js.convertTo[List[Service]]
-          case Failure(_) =>
-            println("Can't parse JSON")
-            List.empty[Service]
-        }
+      Try(fileLines.parseJson) match {
+        case Success(js) =>
+          js.convertTo[List[Service]]
+        case Failure(_) =>
+          println("Can't parse JSON")
+          List.empty[Service]
+      }
     }
   }
 
-  //def importCsvFile: List[Service] = {
-
-  //}
-
+  def importCsvFile: List[Service] = {
+    val tmp = StdIn.readLine("Type full file name with path, i.e. /home/solovyev/Documents/csvfiles/test.csv\n")
+    val file = new File(tmp)
+    var listOfServices = new ListBuffer[Service]
+    if (!file.exists()) {
+      println("File doesn't exist!")
+      importCsvFile
+    }
+    else if (!tmp.endsWith(".csv")) {
+      println("It's not csv file")
+      importCsvFile
+    }
+    else {
+      println("File was found!")
+      for (line <- Source.fromFile(file).getLines()) {
+        val list = line.split(";|,").toList
+        if (list.length == 5) {
+          Try(new Service(list(0).trim, list(1).trim.toInt, list(2).trim, list(3).trim, ServiceJsonFormat.fromString(list(4).trim))) match {
+            case Success(some) => listOfServices += some
+            case Failure(_) =>
+              println("Something went wrong!")
+          }
+        } else {
+          println("File is not correct!")
+        }
+      }
+      listOfServices.toList
+    }
+  }
 }

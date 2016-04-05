@@ -50,14 +50,13 @@ object UserCommandHandler {
   }
 
   def handleAddServiceCommand(services: List[Service]): Unit = {
-    for (s <- services)
-      {
-        val serv = new Service(s.host, s.port, s.name, s.holderEmail, s.environment)
-        Try(sql" insert into service values (${s.host}, ${s.port}, ${s.name}, ${s.holderEmail} , ${environmentToString(s.environment)})".update().apply()) match {
-          case Success(some) =>
-          case Failure(_) => printf("%s %d already existed!\n",s.host,s.port)
-        }
+    for (s <- services) {
+      val serv = new Service(s.host, s.port, s.name, s.holderEmail, s.environment)
+      Try(sql" insert into service values (${s.host}, ${s.port}, ${s.name}, ${s.holderEmail} , ${environmentToString(s.environment)})".update().apply()) match {
+        case Success(some) =>
+        case Failure(_) => printf("%s %d already existed!\n", s.host, s.port)
       }
+    }
     println("Finished!")
     handleUserCommand
   }
@@ -142,15 +141,10 @@ object UserCommandHandler {
   def showAllServices = readShowCommand(sql"select * from service".map(rs => Service(rs)).list.apply())
 
 
-
-  def handleImportServiceCommand(services: List[Service]) = {
-
-  }
-
   def readImportServiceCommand = {
     println("Choose type of the file:")
     StdIn.readLine("Type \"1\" for CSV file \nType \"2\" for JSON file\nType \"exit\" for quit\n") match {
-     // case "1" => importCsvFile
+      case "1" => handleAddServiceCommand(importCsvFile)
       case "2" => handleAddServiceCommand(importJsonFile)
       case _ =>
         println("Wrong number")
@@ -159,7 +153,7 @@ object UserCommandHandler {
   }
 
 
-  def handleUserCommand:Unit = {
+  def handleUserCommand: Unit = {
     readUserCommand match {
       case com: AddService => handleAddServiceCommand(com)
       case com: FindService => handleFindServiceCommand(com)

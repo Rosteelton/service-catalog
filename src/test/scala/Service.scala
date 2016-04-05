@@ -78,4 +78,5 @@ object MyJsonProtocol extends DefaultJsonProtocol {
       }
     }
   }
+
 }

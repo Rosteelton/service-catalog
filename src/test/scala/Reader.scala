@@ -60,13 +60,17 @@ object Reader {
 
   def readHostAndPort: (String, Int) = {
     StdIn.readLine("host:port ").split(":").toList match {
-      case host :: port :: Nil =>
+      case host :: port :: Nil => {
         Try(port.toInt) match {
-          case Success(intPort) if (port.length<=5)=> (host, intPort)
+          case Success(intPort) if (port.length <= 5) => (host, intPort)
           case Failure(_) =>
-            println("Write correct value of port")
+            println("Write correct value")
             readHostAndPort
         }
+      }
+      case _ =>
+        println("Write correct value")
+        readHostAndPort
     }
   }
 }

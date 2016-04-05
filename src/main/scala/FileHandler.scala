@@ -2,9 +2,9 @@ import java.io._
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
+import MyJsonProtocol._
 import UserCommandHandler._
 import spray.json._
-import MyJsonProtocol._
 
 import scala.collection.mutable.ListBuffer
 import scala.io.{Source, StdIn}

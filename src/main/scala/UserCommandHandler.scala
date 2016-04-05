@@ -1,9 +1,10 @@
+import App.session
 import FileHandler._
 import UserCommand._
+import scalikejdbc._
+
 import scala.io.StdIn
 import scala.util.{Failure, Success, Try}
-import scalikejdbc._
-import App.session
 
 object UserCommandHandler {
   def printServices(service: List[Service]) = {

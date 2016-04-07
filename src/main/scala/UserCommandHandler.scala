@@ -1,20 +1,16 @@
+import java.io.File
+
 import App.session
 import FileHandler._
 import UserCommand._
 import scalikejdbc._
 
+import scala.collection.mutable.ListBuffer
 import scala.io.StdIn
 import scala.util.{Failure, Success, Try}
 
 object UserCommandHandler {
-  def printServices(service: List[Service]) = {
-    println()
-    println("HOST                                    PORT      NAME                                    EMAIL                                   ENVIRONMENT")
-    println("---------------------------------------------------------------------------------------------------------------------------------------------")
-    for (s <- service) {
-      println(s.toString)
-    }
-  }
+
 
   def environmentToString(env: Environment): String = {
     env match {
@@ -26,8 +22,7 @@ object UserCommandHandler {
 
   def readShowCommand(service: List[Service]): Unit = {
     StdIn.readLine("Type \"1\" for screen showing \nType \"2\" for save CSV file\nType \"3\" for save JSON file\nType \"4\" don't show result\n") match {
-      case "1" =>
-        printServices(service)
+      case "1" => CommandLineInterface.printServices(service)
         handleUserCommand
       case "2" => saveCsvFile(service)
       case "3" => saveJsonFile(service)
@@ -38,29 +33,39 @@ object UserCommandHandler {
     }
   }
 
-  def handleAddServiceCommand(command: UserCommand.AddService): Unit = {
+  def handleAddServiceCommand(command: UserCommand.AddService): ServiceResult.AddServiceResult = {
     val s = new Service(command.host, command.port, command.name, command.holderEmail, command.environment)
     Try(sql" insert into service values (${s.host}, ${s.port}, ${s.name}, ${s.holderEmail} , ${environmentToString(s.environment)})".update().apply()) match {
       case Success(some) =>
-        println("Success!")
-        readShowCommand(List(s))
+        ServiceResult.AddServiceResult(true)
       case Failure(_) =>
-        println("This service already existed!")
-        handleUserCommand
+        ServiceResult.AddServiceResult(false)
     }
   }
 
-  def handleAddServiceCommand(services: List[Service]): Unit = {
+
+  def servicesToBD(services: List[Service]): Boolean = {
     for (s <- services) {
       val serv = new Service(s.host, s.port, s.name, s.holderEmail, s.environment)
       Try(sql" insert into service values (${s.host}, ${s.port}, ${s.name}, ${s.holderEmail} , ${environmentToString(s.environment)})".update().apply()) match {
-        case Success(some) =>
-        case Failure(_) => printf("%s %d already existed!\n", s.host, s.port)
+        case Failure(_) => return false
       }
     }
-    println("Finished!")
-    handleUserCommand
+    return true
   }
+
+  def handleImportServiceCommand(com: UserCommand.ImportService): ServiceResult.ImportServiceResult = com match {
+    case com: UserCommand.ImportCsv =>
+      val listOfServices = FileHandler.convertCsvToService(com.content)
+      if (listOfServices.isEmpty) ServiceResult.ImportServiceResult(false,"Not possible to parse file - incorrect content or file is empty")
+      else if (servicesToBD(listOfServices)) ServiceResult.ImportServiceResult(true,"")
+      else ServiceResult.ImportServiceResult(false,"Some services already exist")
+    case com: UserCommand.ImportJson =>
+      val listOfServices = FileHandler.convertJsonToServices(com.content)
+      if (listOfServices.isEmpty) ServiceResult.ImportServiceResult(false,"Not possible to parse file - incorrect content or file is empty")
+      else if (servicesToBD(listOfServices)) ServiceResult.ImportServiceResult(true,"")
+      else ServiceResult.ImportServiceResult(false,"Some services already exist")
+    }
 
   def readAddServiceCommand: UserCommand.AddService =
     AddService(Reader.readHost, Reader.readPort, Reader.readName, Reader.readHolderEmail, Reader.readEnvironment)
@@ -70,32 +75,25 @@ object UserCommandHandler {
     FindService(hostAndPort._1, hostAndPort._2)
   }
 
-  def handleFindServiceCommand(command: FindService): Unit = {
-    sql"select * from service where host = ${command.host} AND port = ${command.port}".map(rs => Service(rs)).single.apply() match {
-      case Some(service) =>
-        println("Service was found!")
-        readShowCommand(List(service))
-      case None =>
-        println("Service wasn't found!")
-        handleUserCommand
-    }
+  def handleFindServiceCommand(command: FindService): ServiceResult.FindServiceResult = {
+    val result = sql"select * from service where host = ${command.host} AND port = ${command.port}".map(rs => Service(rs)).single.apply()
+    ServiceResult.FindServiceResult(result)
   }
+
 
   def readUpdateServiceCommand: UserCommand.UpdateService = {
     val hostAndPort = Reader.readHostAndPort
     UpdateService(hostAndPort._1, hostAndPort._2, Reader.readHost, Reader.readPort, Reader.readName, Reader.readHolderEmail, Reader.readEnvironment)
   }
 
-  def handleUpdateServiceCommand(com: UpdateService): Unit = {
+  def handleUpdateServiceCommand(com: UpdateService): ServiceResult.UpdateServiceResult = {
     sql"select * from service where host = ${com.hostToUpdate} AND port = ${com.portToUpdate}".map(rs => Service(rs)).single.apply() match {
       case Some(s) =>
-        println("Service was found!")
-        sql"update service set host=${com.host}, port=${com.port}, name=${com.name}, holderEmail=${com.holderEmail}, environment=${environmentToString(com.environment)} where host=${com.hostToUpdate} AND port=${com.portToUpdate}".update.apply()
-        println("Service was updated")
-        readShowCommand(List(s))
-      case None =>
-        println("Service wasn't found!")
-        handleUserCommand
+        Try(sql"update service set host=${com.host}, port=${com.port}, name=${com.name}, holderEmail=${com.holderEmail}, environment=${environmentToString(com.environment)} where host=${com.hostToUpdate} AND port=${com.portToUpdate}".update.apply()) match {
+          case Success(some) => ServiceResult.SuccessUpdateServiceResult
+          case Failure(_) => ServiceResult.FailedUpdateServiceResult("Service was found but not updated!")
+        }
+      case None => ServiceResult.FailedUpdateServiceResult("Service wasn't found")
     }
   }
 
@@ -104,16 +102,15 @@ object UserCommandHandler {
     DeleteService(hostAndPort._1, hostAndPort._2)
   }
 
-  def handleDeleteServiceCommand(com: DeleteService): Unit = {
+  def handleDeleteServiceCommand(com: DeleteService): ServiceResult.DeleteServiceResult = {
     sql"select * from service where host = ${com.host} AND port = ${com.port}".map(rs => Service(rs)).single.apply() match {
       case Some(s) =>
-        println("Service was found!")
-        sql"delete from service where host=${s.host} and port=${s.port}".update().apply()
-        println("Service was deleted")
-        handleUserCommand
+        Try(sql"delete from service where host=${s.host} and port=${s.port}".update().apply()) match {
+          case Success(some) => ServiceResult.DeleteServiceResult(true)
+          case Failure(_) => ServiceResult.DeleteServiceResult(false)
+        }
       case None =>
-        println("Service wasn't found!")
-        handleUserCommand
+        ServiceResult.DeleteServiceResult(false)
     }
   }
 
@@ -133,23 +130,60 @@ object UserCommandHandler {
       case "3" => readUpdateServiceCommand
       case "4" => readDeleteServiceCommand
       case "5" => ShowAll
-      case "6" => ImportService
+      case "6" => readImportServiceCommand
       case "exit" => UserCommand.Exit
       case _ => readUserCommand
     }
   }
 
-  def showAllServices = readShowCommand(sql"select * from service".map(rs => Service(rs)).list.apply())
+  def handleShowAllServices: ServiceResult.ShowAllServicesResult = {
+    val services = sql"select * from service".map(rs => Service(rs)).list.apply()
+    ServiceResult.ShowAllServicesResult(Some(services))
+  }
 
 
-  def readImportServiceCommand = {
+
+
+
+
+  def readImportServiceCommand: UserCommand.ImportService = {
     println("Choose type of the file:")
     StdIn.readLine("Type \"1\" for CSV file \nType \"2\" for JSON file\nType \"exit\" for quit\n") match {
-      case "1" => handleAddServiceCommand(importCsvFile)
-      case "2" => handleAddServiceCommand(importJsonFile)
+      case "1" =>
+        val tmp = StdIn.readLine("Type full file name with path, i.e. /home/solovyev/Documents/jsonfiles/test.json\n")
+        val file = new File(tmp)
+        if (!file.exists()) {
+          println("File doesn't exist!")
+          readImportServiceCommand
+        }
+        else if (!tmp.endsWith(".json")) {
+          println("It's not json file")
+          readImportServiceCommand
+        }
+        else {
+          println("File was found!")
+          val fileLines = scala.io.Source.fromFile(file).getLines().mkString
+          ImportCsv(fileLines)
+        }
+      case "2" =>
+        val tmp = StdIn.readLine("Type full file name with path, i.e. /home/solovyev/Documents/csvfiles/test.csv\n")
+        val file = new File(tmp)
+        if (!file.exists()) {
+          println("File doesn't exist!")
+          readImportServiceCommand
+        }
+        else if (!tmp.endsWith(".csv")) {
+          println("It's not csv file")
+          readImportServiceCommand
+        }
+        else {
+          println("File was found!")
+          val fileLines = scala.io.Source.fromFile(file).getLines().mkString
+          ImportJson(fileLines)
+        }
       case _ =>
         println("Wrong number")
-        handleUserCommand
+        readImportServiceCommand
     }
   }
 
@@ -160,8 +194,8 @@ object UserCommandHandler {
       case com: FindService => handleFindServiceCommand(com)
       case com: UpdateService => handleUpdateServiceCommand(com)
       case com: DeleteService => handleDeleteServiceCommand(com)
-      case UserCommand.ShowAll => showAllServices
-      case UserCommand.ImportService => readImportServiceCommand
+      case UserCommand.ShowAll => handleShowAllServices
+      case com: ImportService => handleImportServiceCommand(com)
       case UserCommand.Exit => System.exit(0)
     }
   }

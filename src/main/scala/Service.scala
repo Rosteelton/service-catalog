@@ -6,27 +6,19 @@ import spray.json.{DefaultJsonProtocol, DeserializationException, JsNumber, JsOb
 sealed trait Environment
 
 object Environment {
-
   case object Production extends Environment
-
   case object Test extends Environment
-
   case object Development extends Environment
-
 }
-
 
 case class Service(host: String, port: Int, name: String, holderEmail: String, environment: Environment) {
   override def toString: String = {
     val tmp = this.environment.toString
     String.format("%-40s%-10s%-40s%-40s%11s", host, port: Integer, name, holderEmail, tmp)
-    //  "host: " + this.host + " |port: " + this.port + " |name: " + this.name + " |holderEmail: "+ this.holderEmail.toString + " |environment: " + this.environment
   }
-
 }
 
 object Service {
-
 
   //  def get[A: TypeBinder](columnName: ColumnName): A
   // def get[A](columnName: ColumnName)(implicit binder: TypeBinder[A]): A
@@ -78,5 +70,4 @@ object MyJsonProtocol extends DefaultJsonProtocol {
       }
     }
   }
-
 }

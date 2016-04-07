@@ -1,5 +1,5 @@
-import scalikejdbc._
 import UserCommandHandler._
+import scalikejdbc._
 
 sealed trait UserCommand
 object UserCommand {

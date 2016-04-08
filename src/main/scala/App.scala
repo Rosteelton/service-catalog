@@ -50,7 +50,7 @@ object App extends App {
   //
   // sql" insert into service values ('api-m1-01.qiwi.com', 8000, 'QIWI API', 'd.mikhaylov@qiwi.ru', 'Production')".update().apply() //insert sql sample
 
-  // PROGRAM START POINT
-  println("Hello!")
-  handleUserCommand
+  val inputCommand = CommandLineInterface.readUserCommand
+  val serviceResult = UserCommandHandler.handleUserCommand(inputCommand)
+  CommandLineInterface.resultToConsole(serviceResult)
 }

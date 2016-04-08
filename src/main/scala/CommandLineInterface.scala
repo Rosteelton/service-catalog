@@ -1,4 +1,10 @@
+import java.io.File
+
+import FileHandler._
 import ServiceResult._
+import UserCommand.{ImportJson, _}
+
+import scala.io.StdIn
 
 object CommandLineInterface {
 
@@ -35,8 +41,7 @@ object CommandLineInterface {
   }
 
   def printImportServiceResult(res: ImportServiceResult): Unit = {
-    if (res.importSuccess) println("Services successfully imported!")
-    else println(res.err)
+    println(res.err)
   }
 
   def printServices(service: List[Service]) = {
@@ -52,4 +57,84 @@ object CommandLineInterface {
     case Some(services) => printServices(services)
     case None => println("Nothing to show!")
   }
+
+
+  def foundServiceTo(res: ServiceResult.FindServiceResult) = res.foundService match {
+    case Some(service) =>
+      StdIn.readLine("Type \"1\" for screen showing \nType \"2\" for save CSV file\nType \"3\" for save JSON file\nType \"4\" don't show result\n") match {
+        case "1" => printServices(List(service))
+        case "2" => saveCsvFile(List(service)) match {
+          case (fileName, true) => println("\n" + fileName + " successfully created!")
+          case (_, false) => println("\nFile creation failed!")
+        }
+        case "3" => saveJsonFile(List(service)) match {
+          case (fileName, true) => println("\n" + fileName + " successfully created!")
+          case (_, false) => println("\nFile creation failed!")
+        }
+        case "4" => UserCommandHandler.handleUserCommand
+        case _ =>
+          println("Wrong number!")
+      }
+    case None => println("Nothing to show!")
+  }
+
+  def readUserCommand: UserCommand = {
+    println("\n___________________________")
+    println("1 - add new service       |")
+    println("2 - find some service     |")
+    println("3 - update some service   |")
+    println("4 - delete some service   |")
+    println("5 - catalog of services   |")
+    println("6 - import cat from file  |")
+    println("exit - exit application   |")
+    println("---------------------------\n")
+    StdIn.readLine() match {
+      case "1" => readAddServiceCommand
+      case "2" => readFindServiceCommand
+      case "3" => readUpdateServiceCommand
+      case "4" => readDeleteServiceCommand
+      case "5" => ShowAll
+      case "6" => readImportServiceCommand
+      case "exit" => UserCommand.Exit
+      case _ => readUserCommand
+    }
+  }
+
+  def readAddServiceCommand: UserCommand.AddService =
+    AddService(Reader.readHost, Reader.readPort, Reader.readName, Reader.readHolderEmail, Reader.readEnvironment)
+
+  def readFindServiceCommand: UserCommand.FindService = {
+    val hostAndPort = Reader.readHostAndPort
+    FindService(hostAndPort._1, hostAndPort._2)
+  }
+
+  def readUpdateServiceCommand: UserCommand.UpdateService = {
+    val hostAndPort = Reader.readHostAndPort
+    UpdateService(hostAndPort._1, hostAndPort._2, Reader.readHost, Reader.readPort, Reader.readName, Reader.readHolderEmail, Reader.readEnvironment)
+  }
+
+  def readDeleteServiceCommand: DeleteService = {
+    val hostAndPort = Reader.readHostAndPort
+    DeleteService(hostAndPort._1, hostAndPort._2)
+  }
+
+
+  def readImportServiceCommand: UserCommand.ImportService = {
+    val tmp = StdIn.readLine("Type full file name with path, i.e. /home/solovyev/Documents/jsonfiles/test.json\n")
+    val file = new File(tmp)
+    if (!file.exists()) {
+      println("File doesn't exist!")
+      readImportServiceCommand
+    }
+    val fileLines = scala.io.Source.fromFile(file).getLines().mkString
+    tmp match {
+      case s if s.endsWith(".json") => ImportJson(fileLines)
+      case s if s.endsWith(".csv") => ImportCsv(fileLines)
+      case _ =>
+        println("Wrong file format")
+        readImportServiceCommand
+    }
+  }
 }
+
+

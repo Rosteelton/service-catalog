@@ -1,4 +1,3 @@
-import UserCommandHandler._
 import scalikejdbc._
 
 sealed trait UserCommand
@@ -8,8 +7,23 @@ object UserCommand {
   case class UpdateService(hostToUpdate: String, portToUpdate: Int, host: String, port: Int, name: String, holderEmail: String, environment: Environment) extends UserCommand
   case class DeleteService(host: String, port: Int) extends UserCommand
   case object ShowAll extends UserCommand
-  case object ImportService extends UserCommand
-  case object Exit extends UserCommand
+
+  sealed trait ImportService extends UserCommand
+  case class ImportCsv(content: String) extends ImportService
+  case class ImportJson(content: String) extends ImportService
+}
+
+sealed trait ServiceResult
+object ServiceResult {
+  case class AddServiceResult(success: Boolean) extends ServiceResult
+  case class FindServiceResult(foundService: Option[Service]) extends ServiceResult
+
+  sealed trait UpdateServiceResult extends ServiceResult
+    case object SuccessUpdateServiceResult extends UpdateServiceResult
+    case class FailedUpdateServiceResult(err: String) extends UpdateServiceResult
+  case class DeleteServiceResult(deleteSuccess: Boolean) extends ServiceResult
+  case class ShowAllServicesResult(services: Option[List[Service]]) extends ServiceResult
+  case class ImportServiceResult(importSuccess: Boolean, err: String) extends ServiceResult
 }
 
 object App extends App {
@@ -33,7 +47,7 @@ object App extends App {
   //
   // sql" insert into service values ('api-m1-01.qiwi.com', 8000, 'QIWI API', 'd.mikhaylov@qiwi.ru', 'Production')".update().apply() //insert sql sample
 
-  // PROGRAM START POINT
-  println("Hello!")
-  handleUserCommand
+  val inputCommand = CommandLineInterface.readUserCommand
+  val serviceResult = UserCommandHandler.handleUserCommand(inputCommand)
+  CommandLineInterface.resultToConsole(serviceResult)
 }

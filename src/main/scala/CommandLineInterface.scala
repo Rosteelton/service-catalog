@@ -10,7 +10,7 @@ object CommandLineInterface {
 
   def resultToConsole(result: ServiceResult): Unit = result match {
     case res: AddServiceResult => printAddServiceResult(res)
-    case res: FindServiceResult => printFindServiceResult(res)
+    case res: FindServiceResult => foundServiceTo(res)
     case res: UpdateServiceResult => printUpdateServiceResult(res)
     case res: DeleteServiceResult => printDeleteServiceResult(res)
     case res: ShowAllServicesResult => printServices(res)
@@ -20,14 +20,6 @@ object CommandLineInterface {
   def printAddServiceResult(res: AddServiceResult) = {
     if (res.success) println("Service successfully added!")
     else println("Service hasn't been added!")
-  }
-
-  def printFindServiceResult(res: FindServiceResult): Unit = res.foundService match {
-    case Some(service) =>
-      println("Server was found!")
-      printServices(List(service))
-    case None =>
-      println("Server wasn't found!")
   }
 
   def printUpdateServiceResult(res: UpdateServiceResult): Unit = res match {
@@ -71,7 +63,7 @@ object CommandLineInterface {
           case (fileName, true) => println("\n" + fileName + " successfully created!")
           case (_, false) => println("\nFile creation failed!")
         }
-        case "4" => UserCommandHandler.handleUserCommand
+        case "4" => readUserCommand
         case _ =>
           println("Wrong number!")
       }
@@ -84,9 +76,8 @@ object CommandLineInterface {
     println("2 - find some service     |")
     println("3 - update some service   |")
     println("4 - delete some service   |")
-    println("5 - catalog of services   |")
+    println("5 - show catalog          |")
     println("6 - import cat from file  |")
-    println("exit - exit application   |")
     println("---------------------------\n")
     StdIn.readLine() match {
       case "1" => readAddServiceCommand
@@ -95,7 +86,6 @@ object CommandLineInterface {
       case "4" => readDeleteServiceCommand
       case "5" => ShowAll
       case "6" => readImportServiceCommand
-      case "exit" => UserCommand.Exit
       case _ => readUserCommand
     }
   }
@@ -136,5 +126,3 @@ object CommandLineInterface {
     }
   }
 }
-
-

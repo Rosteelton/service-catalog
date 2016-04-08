@@ -27,6 +27,7 @@ object UserCommandHandler {
     for (s <- services) {
       val serv = new Service(s.host, s.port, s.name, s.holderEmail, s.environment)
       Try(sql" insert into service values (${s.host}, ${s.port}, ${s.name}, ${s.holderEmail} , ${environmentToString(s.environment)})".update().apply()) match {
+        case Success(some) =>
         case Failure(_) => return false
       }
     }
@@ -94,6 +95,5 @@ object UserCommandHandler {
     case com: DeleteService => handleDeleteServiceCommand(com)
     case UserCommand.ShowAll => handleShowAllServices
     case com: ImportService => handleImportServiceCommand(com)
-    //case UserCommand.Exit => System.exit(0)
   }
 }

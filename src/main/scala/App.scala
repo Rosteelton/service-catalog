@@ -1,4 +1,3 @@
-import UserCommandHandler._
 import scalikejdbc._
 
 sealed trait UserCommand
@@ -12,8 +11,6 @@ object UserCommand {
   sealed trait ImportService extends UserCommand
   case class ImportCsv(content: String) extends ImportService
   case class ImportJson(content: String) extends ImportService
-
-  case object Exit extends UserCommand
 }
 
 sealed trait ServiceResult

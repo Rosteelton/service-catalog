@@ -1,4 +1,4 @@
-import model.Environment
+package model
 
 import scala.io.StdIn
 import scala.util.{Failure, Success, Try}

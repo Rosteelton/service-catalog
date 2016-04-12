@@ -1,4 +1,5 @@
-import model.{CommandLineInterface, Environment, Service, UserCommandHandler}
+package model
+
 import scalikejdbc._
 
 sealed trait UserCommand
@@ -8,6 +9,7 @@ object UserCommand {
   case class UpdateService(hostToUpdate: String, portToUpdate: Int, host: String, port: Int, name: String, holderEmail: String, environment: Environment) extends UserCommand
   case class DeleteService(host: String, port: Int) extends UserCommand
   case object ShowAll extends UserCommand
+
   sealed trait ImportService extends UserCommand
   case class ImportCsv(content: String) extends ImportService
   case class ImportJson(content: String) extends ImportService

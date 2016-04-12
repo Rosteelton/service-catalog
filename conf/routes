@@ -1,0 +1,8 @@
+
+GET     /                                   controllers.Application.hello
+GET     /services                           controllers.Application.showAll
+DELETE  /services/:hostAndPort              controllers.Application.deleteService(hostAndPort: String)
+GET     /services/:hostAndPort              controllers.Application.findService(hostAndPort:String)
+POST    /services                           controllers.Application.addService
+POST    /services/test                      controllers.Application.addServiceWithSpray
+PUT     /services/:hostAndPort              controllers.Application.updateService(hostAndPort: String)

@@ -1,9 +1,17 @@
-import model._
-import scalikejdbc._
+package model
 
+import App.session
+import UserCommand._
+import scalikejdbc._
 import scala.util.{Failure, Success, Try}
 
 object UserCommandHandler {
+
+  Class.forName("com.mysql.jdbc.Driver")
+  ConnectionPool.singleton("jdbc:mysql://localhost:3306/services_catalog", "root", "12345")
+  implicit val session = AutoSession
+
+  scalikejdbc.GlobalSettings.loggingSQLAndTime = new LoggingSQLAndTimeSettings(enabled = false)
 
   def environmentToString(env: Environment): String = {
     env match {
@@ -22,6 +30,17 @@ object UserCommandHandler {
         ServiceResult.AddServiceResult(false)
     }
   }
+
+  def handleAddServiceCommand(s: Service):ServiceResult.AddServiceResult = {
+    Try(sql" insert into service values (${s.host}, ${s.port}, ${s.name}, ${s.holderEmail} , ${environmentToString(s.environment)})".update().apply()) match {
+      case Success(some) =>
+        ServiceResult.AddServiceResult(true)
+      case Failure(_) =>
+        ServiceResult.AddServiceResult(false)
+    }
+  }
+
+
 
   def servicesToBD(services: List[Service]): Boolean = {
     for (s <- services) {

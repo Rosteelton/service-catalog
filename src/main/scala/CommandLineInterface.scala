@@ -1,8 +1,6 @@
 import java.io.File
 
-import FileHandler._
-import ServiceResult._
-import UserCommand.{ImportJson, _}
+import model.{Reader, Service, ServiceResult, UserCommand}
 
 import scala.io.StdIn
 

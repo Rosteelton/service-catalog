@@ -1,23 +1,23 @@
+package model
+
 import java.io._
 import java.text.SimpleDateFormat
 import java.util.Calendar
-
-import model.Service
+import MyJsonProtocol._
 import spray.json._
-
 import scala.collection.mutable.ListBuffer
-import scala.io.Source
+import scala.io.{Source}
 import scala.util.{Failure, Success, Try}
 
 object FileHandler {
 
-  def saveJsonFile(services: List[Service]): (String,Boolean)  = {
+  def saveJsonFile(services: List[Service]): (String, Boolean) = {
     val data = Calendar.getInstance().getTime
     val dateFormat = new SimpleDateFormat("dd.MM.yyyy_H:mm:ss")
     val file = new File("/home/solovyev/Documents/jsonfiles/" + dateFormat.format(data) + ".json")
     val bw = new BufferedWriter(new FileWriter(file))
     val jsonDoc = services.toJson.prettyPrint
-    Try (bw.write(jsonDoc)) match {
+    Try(bw.write(jsonDoc)) match {
       case Success(some) =>
         bw.close()
         (dateFormat.format(data), true)
@@ -27,12 +27,12 @@ object FileHandler {
     }
   }
 
-  def saveCsvFile(services: List[Service]): (String,Boolean) = {
+  def saveCsvFile(services: List[Service]): (String, Boolean) = {
     val data = Calendar.getInstance().getTime
     val dateFormat = new SimpleDateFormat("dd.MM.yyyy_H:mm:ss")
     val file = new File("/home/solovyev/Documents/csvfiles/" + dateFormat.format(data) + ".csv")
     val bw = new BufferedWriter(new FileWriter(file))
-    Try (for (service <- services) {
+    Try(for (service <- services) {
       bw.write(service.host + ";" + service.port + ";" + service.name + ";" + service.holderEmail + ";" + service.environment.toString + "\n")
     }) match {
       case Success(some) =>
@@ -53,7 +53,25 @@ object FileHandler {
     }
   }
 
-  def convertCsvToService(content: String): Either[String,List[Service]] = {
+  def jsValueToService(js: JsValue): Option[Service] = {
+    Try(js.convertTo[Service]) match {
+      case Success(s) => Some(s)
+      case Failure(_) => None
+    }
+
+
+
+  }
+
+  def convertJsonToService(content: String): Either[String,Service] = {
+    Try(content.parseJson) match {
+      case Success(js) =>
+        Right(js.convertTo[Service])
+      case Failure(exception) => Left(exception.getMessage)
+    }
+  }
+
+  def convertCsvToService(content: String): Either[String, List[Service]] = {
     var listOfServices = new ListBuffer[Service]
     for (line <- content.split("\n")) {
       val list = line.split(";|,").toList

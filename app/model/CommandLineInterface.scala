@@ -105,7 +105,7 @@ object CommandLineInterface {
     hostAndPort.split(":").toList match {
       case host :: port :: Nil => {
         Try(port.toInt) match {
-          case Success(intPort) if (port.length <= 5) => Some(DeleteService(host,intPort))
+          case Success(intPort) => Some(DeleteService(host,intPort))
           case Failure(_) => None
         }
       }
@@ -123,7 +123,7 @@ object CommandLineInterface {
     }
     val fileLines = scala.io.Source.fromFile(file).getLines().mkString
     tmp match {
-      case s if s.endsWith(".json") => ImportJson(fileLines)
+      //case s if s.endsWith(".json") => ImportJson(fileLines)
       case s if s.endsWith(".csv") => ImportCsv(fileLines)
       case _ =>
         println("Wrong file format")

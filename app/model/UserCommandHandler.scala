@@ -43,14 +43,15 @@ object UserCommandHandler {
 
 
   def servicesToBD(services: List[Service]): Boolean = {
+    var allIsGood = true
     for (s <- services) {
       val serv = new Service(s.host, s.port, s.name, s.holderEmail, s.environment)
       Try(sql" insert into service values (${s.host}, ${s.port}, ${s.name}, ${s.holderEmail} , ${environmentToString(s.environment)})".update().apply()) match {
         case Success(some) =>
-        case Failure(_) => false
+        case Failure(_) => allIsGood=false
       }
     }
-    true
+    allIsGood
   }
 
   def handleImportServiceCommand(com: UserCommand.ImportService): ServiceResult.ImportServiceResult = com match {
@@ -64,14 +65,13 @@ object UserCommandHandler {
           if (isSaved)
             ServiceResult.ImportServiceResult(true, "Successfully saved!")
           else
-            ServiceResult.ImportServiceResult(false, "Some services already exist!")
+            ServiceResult.ImportServiceResult(false, "OK but some services already exist!")
       }
     case com: UserCommand.ImportJson =>
-      val services = FileHandler.convertJsonToServices(com.content)
-      val isSaved = servicesToBD(services)
-      if (services.isEmpty) ServiceResult.ImportServiceResult(false, "Not possible to parse file")
+      val isSaved = servicesToBD(com.content)
+      if (com.content.isEmpty) ServiceResult.ImportServiceResult(false, "Not possible to parse file")
       else if (isSaved) ServiceResult.ImportServiceResult(true, "Successfully saved!")
-      else ServiceResult.ImportServiceResult(false, "Some services already exist!")
+      else ServiceResult.ImportServiceResult(false, "OK but some services already exist!")
   }
 
   def handleFindServiceCommand(command: FindService): ServiceResult.FindServiceResult = {

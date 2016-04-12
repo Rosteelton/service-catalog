@@ -29,17 +29,6 @@ object Application extends Controller {
     }
   }
 
-  //  def importService = Action { request =>
-  //    convertJsonToService(request.body.toString) match {
-  //      case s :: Nil =>
-  //        val result = UserCommandHandler.handleAddServiceCommand(s)
-  //        val content = CommandLineInterface.printAddServiceResult(result)
-  //        Ok(content)
-  //      case List() => BadRequest("Wrong Json format")
-  //      case s :: rest => BadRequest("Need only one service!")
-  //    }
-  //  }
-
   def addServiceWithSpray = Action { request =>
     request.body.asText match {
       case Some(js) =>
@@ -51,18 +40,6 @@ object Application extends Controller {
           case Left(exception) => BadRequest("Not possible to parse Json")
         }
       case None => BadRequest("Wrong Json Format")
-    }
-  }
-
-  def addService = Action { request =>
-    request.body.asJson match {
-      case Some(jsValue) =>
-        val placeResult = jsValue.validate[Service]
-        val service = placeResult.get
-        val result = UserCommandHandler.handleAddServiceCommand(service)
-        if (result.success) Created(CommandLineInterface.printAddServiceResult(result))
-        else Conflict(CommandLineInterface.printAddServiceResult(result))
-      case None => BadRequest("Wrong json format!")
     }
   }
 
@@ -99,4 +76,42 @@ object Application extends Controller {
         case None => BadRequest("Incorrect host and port")
       }
   }
+
+  def addService = Action { request =>
+    request.body.asJson match {
+      case Some(jsValue) =>
+        val placeResult = jsValue.validate[Service]
+        val service = placeResult.get
+        val result = UserCommandHandler.handleAddServiceCommand(service)
+        if (result.success) Created(CommandLineInterface.printAddServiceResult(result))
+        else Conflict(CommandLineInterface.printAddServiceResult(result))
+      case None => BadRequest("Wrong json format!")
+    }
+  }
+
+  def importJsonFile = Action { request =>
+    request.body.asJson match {
+      case Some(jsValue) =>
+        val placeResult = jsValue.validate[List[Service]]
+        Try(placeResult.get) match {
+          case Success(services) =>
+            val result = UserCommandHandler.handleImportServiceCommand(UserCommand.ImportJson(services))
+            if (result.importSuccess) Created(result.err)
+            else MultiStatus(result.err)
+          case Failure(_) => BadRequest("Can't get list of services! Mistake in file!")
+        }
+      case None => BadRequest("Wrong json format!")
+    }
+  }
+
+  def importCsvFile = Action { request =>
+    request.body.asText match {
+      case Some(string) =>
+        val result = UserCommandHandler.handleImportServiceCommand(UserCommand.ImportCsv(string))
+        if (result.importSuccess) Created(result.err)
+        else MultiStatus(result.err)
+      case None => BadRequest("Empty file!")
+    }
+  }
+
 }

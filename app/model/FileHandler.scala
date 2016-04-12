@@ -78,12 +78,13 @@ object FileHandler {
       if (list.length == 5) {
         Try(new Service(list(0).trim, list(1).trim.toInt, list(2).trim, list(3).trim, ServiceJsonFormat.fromString(list(4).trim))) match {
           case Success(some) => listOfServices += some
-          case Failure(e) => Left(e.getMessage)
+          case Failure(e) => return Left(e.getMessage)
         }
       } else {
-        Left("Invalid csv format: expected 5 fields but found: " + list.length)
+        return Left("Invalid csv format: expected 5 fields but found: " + list.length)
       }
     }
-    Right(listOfServices.toList)
+    if (listOfServices.isEmpty) Left("Empty file!")
+    else Right(listOfServices.toList)
   }
 }

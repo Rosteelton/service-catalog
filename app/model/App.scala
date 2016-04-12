@@ -12,7 +12,7 @@ object UserCommand {
 
   sealed trait ImportService extends UserCommand
   case class ImportCsv(content: String) extends ImportService
-  case class ImportJson(content: String) extends ImportService
+  case class ImportJson(content: List[Service]) extends ImportService
 }
 
 sealed trait ServiceResult
@@ -47,6 +47,5 @@ object App extends App {
   //      """.execute.apply()
   //
   // sql" insert into service values ('api-m1-01.qiwi.com', 8000, 'QIWI API', 'd.mikhaylov@qiwi.ru', 'Production')".update().apply() //insert sql sample
-
 
 }

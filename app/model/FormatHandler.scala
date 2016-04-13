@@ -6,10 +6,9 @@ import java.util.Calendar
 import MyJsonProtocol._
 import spray.json._
 import scala.collection.mutable.ListBuffer
-import scala.io.{Source}
 import scala.util.{Failure, Success, Try}
 
-object FileHandler {
+object FormatHandler {
 
   def saveJsonFile(services: List[Service]): (String, Boolean) = {
     val data = Calendar.getInstance().getTime
@@ -44,7 +43,7 @@ object FileHandler {
     }
   }
 
-  def convertServicesToCsv(services: List[Service]): String = {
+  def servicesToCsv(services: List[Service]): String = {
     val csvServices = new ListBuffer[String]
        for (service <- services) {
       csvServices.append(service.host + ";" + service.port + ";" + service.name + ";" + service.holderEmail + ";" + service.environment.toString)
@@ -52,7 +51,7 @@ object FileHandler {
     csvServices.toList.reduceLeft((str1,str2) => str1+"\n"+str2)
   }
 
-  def convertJsonToServices(content: String): List[Service] = {
+  def jsonToServices(content: String): List[Service] = {
     Try(content.parseJson) match {
       case Success(js) =>
         js.convertTo[List[Service]]
@@ -61,22 +60,7 @@ object FileHandler {
     }
   }
 
-  def jsValueToService(js: JsValue): Option[Service] = {
-    Try(js.convertTo[Service]) match {
-      case Success(s) => Some(s)
-      case Failure(_) => None
-    }
-  }
-
-  def convertJsonToService(content: String): Either[String,Service] = {
-    Try(content.parseJson) match {
-      case Success(js) =>
-        Right(js.convertTo[Service])
-      case Failure(exception) => Left(exception.getMessage)
-    }
-  }
-
-  def convertCsvToService(content: String): Either[String, List[Service]] = {
+  def csvToServices(content: String): Either[String, List[Service]] = {
     var listOfServices = new ListBuffer[Service]
     for (line <- content.split("\n")) {
       val list = line.split(";|,").toList
@@ -92,5 +76,4 @@ object FileHandler {
     if (listOfServices.isEmpty) Left("Empty file!")
     else Right(listOfServices.toList)
   }
-
 }

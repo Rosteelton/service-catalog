@@ -1,6 +1,5 @@
 import model._
 import scalikejdbc._
-
 import scala.util.{Failure, Success, Try}
 
 object UserCommandHandler {
@@ -36,7 +35,7 @@ object UserCommandHandler {
 
   def handleImportServiceCommand(com: UserCommand.ImportService): ServiceResult.ImportServiceResult = com match {
     case com: UserCommand.ImportCsv =>
-      val listOfServices = FileHandler.convertCsvToService(com.content)
+      val listOfServices = FormatHandler.csvToServices(com.content)
 
       listOfServices match {
         case Left(error) => ServiceResult.ImportServiceResult(false, error)
@@ -48,7 +47,7 @@ object UserCommandHandler {
             ServiceResult.ImportServiceResult(false, "Some services already exist!")
       }
     case com: UserCommand.ImportJson =>
-      val services = FileHandler.convertJsonToServices(com.content)
+      val services = FormatHandler.jsonToServices(com.content)
       val isSaved = servicesToBD(services)
       if (services.isEmpty) ServiceResult.ImportServiceResult(false, "Not possible to parse file")
       else if (isSaved) ServiceResult.ImportServiceResult(true, "Successfully saved!")

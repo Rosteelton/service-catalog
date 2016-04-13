@@ -2,7 +2,7 @@ package controllers
 
 import play.api.mvc.{Action, Controller}
 import model._
-import play.api.libs.json.{Json}
+import play.api.libs.json.Json
 import scala.util.{Failure, Success, Try}
 
 object Application extends Controller {
@@ -13,13 +13,13 @@ object Application extends Controller {
 
   def showAll = Action { request =>
     val result = UserCommandHandler.handleShowAllServices
-    val content = CommandLineInterface.printServices(result)
+    val content = Printer.printServices(result)
     Ok(content)
   }
 
   def showAllAsCsv = Action { request =>
     val result = UserCommandHandler.handleShowAllServices
-    val content = CommandLineInterface.printServicesAsCsv(result)
+    val content = Printer.printServicesAsCsv(result)
     Ok(content)
   }
 
@@ -32,41 +32,26 @@ object Application extends Controller {
   }
 
   def deleteService(hostAndPort: String) = Action { request =>
-    CommandLineInterface.readDeleteServiceCommand(hostAndPort) match {
+    UserCommandHandler.readDeleteServiceCommand(hostAndPort) match {
       case Some(command) =>
         val result = UserCommandHandler.handleDeleteServiceCommand(command)
-        val content = CommandLineInterface.printDeleteServiceResult(result)
+        val content = Printer.printDeleteServiceResult(result)
         Ok("Service " + hostAndPort + content)
       case None => BadRequest("Incorrect host and port")
     }
   }
 
-
-  def addServiceWithSpray = Action { request =>
-    request.body.asText match {
-      case Some(js) =>
-        FileHandler.convertJsonToService(js) match {
-          case Right(service) =>
-            val result = UserCommandHandler.handleAddServiceCommand(service)
-            val content = CommandLineInterface.printAddServiceResult(result)
-            Created(content)
-          case Left(exception) => BadRequest("Not possible to parse Json")
-        }
-      case None => BadRequest("Wrong Json Format")
-    }
-  }
-
   def updateService(hostAndPort: String) = Action { request =>
-    CommandLineInterface.readFindServiceCommand(hostAndPort) match {
+    UserCommandHandler.readFindServiceCommand(hostAndPort) match {
       case Some(findService) =>
         request.body.asJson match {
           case Some(jsValue) =>
             val placeResult = jsValue.validate[Service]
             Try(placeResult.get) match {
               case Success(service) =>
-                val command = CommandLineInterface.readUpdateServiceCommand(service, findService.host, findService.port)
+                val command = UserCommandHandler.readUpdateServiceCommand(service, findService.host, findService.port)
                 UserCommandHandler.handleUpdateServiceCommand(command) match {
-                  case ServiceResult.SuccessUpdateServiceResult => Ok(CommandLineInterface.printUpdateServiceResult(ServiceResult.SuccessUpdateServiceResult))
+                  case ServiceResult.SuccessUpdateServiceResult => Ok(Printer.printUpdateServiceResult(ServiceResult.SuccessUpdateServiceResult))
                   case res: ServiceResult.FailedUpdateServiceResult => BadRequest(res.err)
                 }
               case Failure(_) => BadRequest("Not possible to get service from json")
@@ -79,11 +64,11 @@ object Application extends Controller {
 
   def findService(hostAndPort: String) = Action {
     request =>
-      CommandLineInterface.readFindServiceCommand(hostAndPort) match {
+      UserCommandHandler.readFindServiceCommand(hostAndPort) match {
         case Some(findService) =>
           val result = UserCommandHandler.handleFindServiceCommand(findService)
           result.foundService match {
-            case Some(service) => Ok("Service was found: \n" + CommandLineInterface.printServices(List(service)))
+            case Some(service) => Ok("Service was found: \n" + Printer.printServices(List(service)))
             case None => NotFound("Service wasn't found")
           }
         case None => BadRequest("Incorrect host and port")
@@ -92,7 +77,7 @@ object Application extends Controller {
 
   def findServiceToJson(hostAndPort: String) = Action {
     request =>
-      CommandLineInterface.readFindServiceCommand(hostAndPort) match {
+      UserCommandHandler.readFindServiceCommand(hostAndPort) match {
         case Some(findService) =>
           val result = UserCommandHandler.handleFindServiceCommand(findService)
           result.foundService match {
@@ -105,12 +90,12 @@ object Application extends Controller {
   }
 
   def findServiceToCsv(hostAndPort: String) = Action { request =>
-        CommandLineInterface.readFindServiceCommand(hostAndPort) match {
+    UserCommandHandler.readFindServiceCommand(hostAndPort) match {
       case Some(findService) =>
         val result = UserCommandHandler.handleFindServiceCommand(findService)
         result.foundService match {
           case Some(service) =>
-            Ok(FileHandler.convertServicesToCsv(List(service)))
+            Ok(FormatHandler.servicesToCsv(List(service)))
           case None => NotFound("Service wasn't found")
         }
       case None => BadRequest("Incorrect host and port")
@@ -123,8 +108,8 @@ object Application extends Controller {
         val placeResult = jsValue.validate[Service]
         val service = placeResult.get
         val result = UserCommandHandler.handleAddServiceCommand(service)
-        if (result.success) Created(CommandLineInterface.printAddServiceResult(result))
-        else Conflict(CommandLineInterface.printAddServiceResult(result))
+        if (result.success) Created(Printer.printAddServiceResult(result))
+        else Conflict(Printer.printAddServiceResult(result))
       case None => BadRequest("Wrong json format!")
     }
   }
@@ -152,5 +137,9 @@ object Application extends Controller {
         else MultiStatus(result.err)
       case None => BadRequest("Empty file!")
     }
+  }
+
+  def untrail(path: String) = Action {
+    MovedPermanently("/" + path)
   }
 }

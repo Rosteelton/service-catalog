@@ -1,6 +1,5 @@
 package model
 
-import App.session
 import UserCommand._
 import scalikejdbc._
 import scala.util.{Failure, Success, Try}
@@ -21,16 +20,6 @@ object UserCommandHandler {
     }
   }
 
-  def handleAddServiceCommand(command: UserCommand.AddService): ServiceResult.AddServiceResult = {
-    val s = new Service(command.host, command.port, command.name, command.holderEmail, command.environment)
-    Try(sql" insert into service values (${s.host}, ${s.port}, ${s.name}, ${s.holderEmail} , ${environmentToString(s.environment)})".update().apply()) match {
-      case Success(some) =>
-        ServiceResult.AddServiceResult(true)
-      case Failure(_) =>
-        ServiceResult.AddServiceResult(false)
-    }
-  }
-
   def handleAddServiceCommand(s: Service):ServiceResult.AddServiceResult = {
     Try(sql" insert into service values (${s.host}, ${s.port}, ${s.name}, ${s.holderEmail} , ${environmentToString(s.environment)})".update().apply()) match {
       case Success(some) =>
@@ -39,8 +28,6 @@ object UserCommandHandler {
         ServiceResult.AddServiceResult(false)
     }
   }
-
-
 
   def servicesToBD(services: List[Service]): Boolean = {
     var allIsGood = true
@@ -56,7 +43,7 @@ object UserCommandHandler {
 
   def handleImportServiceCommand(com: UserCommand.ImportService): ServiceResult.ImportServiceResult = com match {
     case com: UserCommand.ImportCsv =>
-      val listOfServices = FileHandler.convertCsvToService(com.content)
+      val listOfServices = FormatHandler.csvToServices(com.content)
 
       listOfServices match {
         case Left(error) => ServiceResult.ImportServiceResult(false, error)
@@ -107,12 +94,30 @@ object UserCommandHandler {
     ServiceResult.ShowAllServicesResult(Some(services))
   }
 
-  def handleUserCommand(com: UserCommand): ServiceResult = com match {
-    case com: AddService => handleAddServiceCommand(com)
-    case com: FindService => handleFindServiceCommand(com)
-    case com: UpdateService => handleUpdateServiceCommand(com)
-    case com: DeleteService => handleDeleteServiceCommand(com)
-    case UserCommand.ShowAll => handleShowAllServices
-    case com: ImportService => handleImportServiceCommand(com)
+  def readFindServiceCommand(hostAndPort: String): Option[FindService] = {
+    hostAndPort.split(":").toList match {
+      case host :: port :: Nil => {
+        Try(port.toInt) match {
+          case Success(intPort) if (port.length <= 5) => Some(FindService(host,intPort))
+          case Failure(_) => None
+        }
+      }
+      case _ => None
+    }
+  }
+
+  def readUpdateServiceCommand(updateService: Service, hostToUpdate: String, portToUpdate: Int): UserCommand.UpdateService =
+    UpdateService(hostToUpdate, portToUpdate, updateService.host, updateService.port, updateService.name, updateService.holderEmail, updateService.environment)
+
+  def readDeleteServiceCommand(hostAndPort: String): Option[DeleteService] = {
+    hostAndPort.split(":").toList match {
+      case host :: port :: Nil => {
+        Try(port.toInt) match {
+          case Success(intPort) => Some(DeleteService(host,intPort))
+          case Failure(_) => None
+        }
+      }
+      case _ => None
+    }
   }
 }

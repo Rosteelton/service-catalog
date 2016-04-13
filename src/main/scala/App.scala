@@ -1,4 +1,4 @@
-import model.{CommandLineInterface, Environment, Service, UserCommandHandler}
+import model.{Environment, Service, UserCommandHandler}
 import scalikejdbc._
 
 sealed trait UserCommand
@@ -45,6 +45,4 @@ object App extends App {
   //      """.execute.apply()
   //
   // sql" insert into service values ('api-m1-01.qiwi.com', 8000, 'QIWI API', 'd.mikhaylov@qiwi.ru', 'Production')".update().apply() //insert sql sample
-
-
 }

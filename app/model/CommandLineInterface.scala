@@ -2,6 +2,7 @@ package model
 
 import java.io.File
 
+import play.api.libs.json.{JsValue, Json}
 import FileHandler._
 import ServiceResult._
 import UserCommand.{ImportJson, _}
@@ -39,6 +40,7 @@ object CommandLineInterface {
     println(res.err)
   }
 
+
   def printServices(service: List[Service]): String = {
     var resultString = new StringBuilder()
     resultString.append("\nHOST                                    PORT      NAME                                    EMAIL                                   ENVIRONMENT")
@@ -60,6 +62,10 @@ object CommandLineInterface {
     case None => "Nothing to show!"
   }
 
+def printServicesAsCsv(res: ShowAllServicesResult): String = res.services match {
+  case Some(services) => FileHandler.convertServicesToCsv(services)
+  case None => "Nothing to show!"
+}
 
   def foundServiceTo(res: ServiceResult.FindServiceResult) = res.foundService match {
     case Some(service) =>

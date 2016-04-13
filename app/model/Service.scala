@@ -1,10 +1,13 @@
 package model
 
 import java.sql.ResultSet
-import play.api.libs.json._
+
+import model.Environment.{Development, Production, Test}
+import play.api.libs.json.{JsValue, _}
 import scalikejdbc._
 import spray.json.{DefaultJsonProtocol, DeserializationException, JsNumber, JsObject, JsString, JsValue, RootJsonFormat}
 import play.api.libs.functional.syntax._
+import play.api.libs.json
 
 sealed trait Environment
 
@@ -58,6 +61,11 @@ object Service {
     case _ => Right("Wrong string of environment!")
   }
 
+  def fromEnvironmentToString(environment: Environment): String = environment match {
+    case Environment.Test => "Test"
+    case Environment.Development => "Development"
+    case Environment.Production => "Production"
+  }
 
   implicit val environmentReads: Reads[Environment] = Reads[Environment] {
     case play.api.libs.json.JsString(value) =>
@@ -68,6 +76,11 @@ object Service {
     case _ => JsError("Expect string")
   }
 
+  implicit val environmentWrites: Writes[Environment] = Writes[Environment] {
+    environment => json.JsString(fromEnvironmentToString(environment))
+  }
+
+
   implicit val serviceReads: Reads[Service] = (
     (JsPath \ "host").read[String] and
       (JsPath \ "port").read[Int] and
@@ -75,6 +88,14 @@ object Service {
       (JsPath \ "holderEmail").read[String] and
       (JsPath \ "environment").read[Environment]
     ) ((host, port, name, holderEmail, environment) => Service(host, port, name, holderEmail, environment))
+
+implicit val serviceWrites: Writes[Service] = (
+  (JsPath \ "host").write[String] and
+    (JsPath \ "port").write[Int] and
+    (JsPath \ "name").write[String] and
+    (JsPath \ "holderEmail").write[String] and
+    (JsPath \ "environment").write[Environment]
+  ) (unlift(Service.unapply))
 
 }
 
@@ -97,8 +118,7 @@ object MyJsonProtocol extends DefaultJsonProtocol {
       case "Development" => Environment.Development
     }
 
-    def read(value: JsValue) = {
-
+    def read(value: spray.json.JsValue) = {
       value.asJsObject.getFields("host", "port", "name", "holderEmail", "environment") match {
         case Seq(JsString(host), JsNumber(port), JsString(name), JsString(holderEmail), JsString(environment)) =>
           new Service(host, port.toInt, name, holderEmail, fromString(environment))

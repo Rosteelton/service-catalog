@@ -1,10 +1,8 @@
 package controllers
 
-import model.ServiceResult.UpdateServiceResult
 import play.api.mvc.{Action, Controller}
 import model._
-import play.api.libs.json.{JsResult, Json}
-
+import play.api.libs.json.{Json}
 import scala.util.{Failure, Success, Try}
 
 object Application extends Controller {
@@ -19,6 +17,20 @@ object Application extends Controller {
     Ok(content)
   }
 
+  def showAllAsCsv = Action { request =>
+    val result = UserCommandHandler.handleShowAllServices
+    val content = CommandLineInterface.printServicesAsCsv(result)
+    Ok(content)
+  }
+
+  def showAllAsJson = Action { request =>
+    val result = UserCommandHandler.handleShowAllServices
+    result.services match {
+      case Some(services) => Ok(Json.toJson(services))
+      case None => Ok("Nothing to show!")
+    }
+  }
+
   def deleteService(hostAndPort: String) = Action { request =>
     CommandLineInterface.readDeleteServiceCommand(hostAndPort) match {
       case Some(command) =>
@@ -28,6 +40,7 @@ object Application extends Controller {
       case None => BadRequest("Incorrect host and port")
     }
   }
+
 
   def addServiceWithSpray = Action { request =>
     request.body.asText match {
@@ -77,6 +90,33 @@ object Application extends Controller {
       }
   }
 
+  def findServiceToJson(hostAndPort: String) = Action {
+    request =>
+      CommandLineInterface.readFindServiceCommand(hostAndPort) match {
+        case Some(findService) =>
+          val result = UserCommandHandler.handleFindServiceCommand(findService)
+          result.foundService match {
+            case Some(service) =>
+              Ok(Json.toJson(service))
+            case None => NotFound("Service wasn't found")
+          }
+        case None => BadRequest("Incorrect host and port")
+      }
+  }
+
+  def findServiceToCsv(hostAndPort: String) = Action { request =>
+        CommandLineInterface.readFindServiceCommand(hostAndPort) match {
+      case Some(findService) =>
+        val result = UserCommandHandler.handleFindServiceCommand(findService)
+        result.foundService match {
+          case Some(service) =>
+            Ok(FileHandler.convertServicesToCsv(List(service)))
+          case None => NotFound("Service wasn't found")
+        }
+      case None => BadRequest("Incorrect host and port")
+    }
+  }
+
   def addService = Action { request =>
     request.body.asJson match {
       case Some(jsValue) =>
@@ -113,5 +153,4 @@ object Application extends Controller {
       case None => BadRequest("Empty file!")
     }
   }
-
 }

@@ -44,6 +44,14 @@ object FileHandler {
     }
   }
 
+  def convertServicesToCsv(services: List[Service]): String = {
+    val csvServices = new ListBuffer[String]
+       for (service <- services) {
+      csvServices.append(service.host + ";" + service.port + ";" + service.name + ";" + service.holderEmail + ";" + service.environment.toString)
+    }
+    csvServices.toList.reduceLeft((str1,str2) => str1+"\n"+str2)
+  }
+
   def convertJsonToServices(content: String): List[Service] = {
     Try(content.parseJson) match {
       case Success(js) =>
@@ -58,9 +66,6 @@ object FileHandler {
       case Success(s) => Some(s)
       case Failure(_) => None
     }
-
-
-
   }
 
   def convertJsonToService(content: String): Either[String,Service] = {
@@ -87,4 +92,5 @@ object FileHandler {
     if (listOfServices.isEmpty) Left("Empty file!")
     else Right(listOfServices.toList)
   }
+
 }

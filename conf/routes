@@ -1,0 +1,13 @@
+GET     /*path/                             controllers.Application.untrail(path: String)
+GET     /                                   controllers.Application.hello
+GET     /services                           controllers.Application.showAll
+GET     /services/json                      controllers.Application.showAllAsJson
+GET     /services/csv                       controllers.Application.showAllAsCsv
+DELETE  /services/:hostAndPort              controllers.Application.deleteService(hostAndPort: String)
+GET     /services/:hostAndPort              controllers.Application.findService(hostAndPort:String)
+POST    /services                           controllers.Application.addService
+PUT     /services/:hostAndPort              controllers.Application.updateService(hostAndPort: String)
+POST    /services/bulk/csv                  controllers.Application.importCsvFile
+POST    /services/bulk/json                 controllers.Application.importJsonFile
+GET     /services/json/:hostAndPort         controllers.Application.findServiceToJson(hostAndPort: String)
+GET     /services/csv/:hostAndPort          controllers.Application.findServiceToCsv(hostAndPort: String)

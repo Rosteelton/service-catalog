@@ -1,23 +1,22 @@
+package model
+
 import java.io._
 import java.text.SimpleDateFormat
 import java.util.Calendar
-
-import model.Service
+import MyJsonProtocol._
 import spray.json._
-
 import scala.collection.mutable.ListBuffer
-import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
-object FileHandler {
+object FormatHandler {
 
-  def saveJsonFile(services: List[Service]): (String,Boolean)  = {
+  def saveJsonFile(services: List[Service]): (String, Boolean) = {
     val data = Calendar.getInstance().getTime
     val dateFormat = new SimpleDateFormat("dd.MM.yyyy_H:mm:ss")
     val file = new File("/home/solovyev/Documents/jsonfiles/" + dateFormat.format(data) + ".json")
     val bw = new BufferedWriter(new FileWriter(file))
     val jsonDoc = services.toJson.prettyPrint
-    Try (bw.write(jsonDoc)) match {
+    Try(bw.write(jsonDoc)) match {
       case Success(some) =>
         bw.close()
         (dateFormat.format(data), true)
@@ -27,12 +26,12 @@ object FileHandler {
     }
   }
 
-  def saveCsvFile(services: List[Service]): (String,Boolean) = {
+  def saveCsvFile(services: List[Service]): (String, Boolean) = {
     val data = Calendar.getInstance().getTime
     val dateFormat = new SimpleDateFormat("dd.MM.yyyy_H:mm:ss")
     val file = new File("/home/solovyev/Documents/csvfiles/" + dateFormat.format(data) + ".csv")
     val bw = new BufferedWriter(new FileWriter(file))
-    Try (for (service <- services) {
+    Try(for (service <- services) {
       bw.write(service.host + ";" + service.port + ";" + service.name + ";" + service.holderEmail + ";" + service.environment.toString + "\n")
     }) match {
       case Success(some) =>
@@ -44,7 +43,15 @@ object FileHandler {
     }
   }
 
-  def convertJsonToServices(content: String): List[Service] = {
+  def servicesToCsv(services: List[Service]): String = {
+    val csvServices = new ListBuffer[String]
+       for (service <- services) {
+      csvServices.append(service.host + ";" + service.port + ";" + service.name + ";" + service.holderEmail + ";" + service.environment.toString)
+    }
+    csvServices.toList.reduceLeft((str1,str2) => str1+"\n"+str2)
+  }
+
+  def jsonToServices(content: String): List[Service] = {
     Try(content.parseJson) match {
       case Success(js) =>
         js.convertTo[List[Service]]
@@ -53,19 +60,20 @@ object FileHandler {
     }
   }
 
-  def convertCsvToService(content: String): Either[String,List[Service]] = {
+  def csvToServices(content: String): Either[String, List[Service]] = {
     var listOfServices = new ListBuffer[Service]
     for (line <- content.split("\n")) {
       val list = line.split(";|,").toList
       if (list.length == 5) {
         Try(new Service(list(0).trim, list(1).trim.toInt, list(2).trim, list(3).trim, ServiceJsonFormat.fromString(list(4).trim))) match {
           case Success(some) => listOfServices += some
-          case Failure(e) => Left(e.getMessage)
+          case Failure(e) => return Left(e.getMessage)
         }
       } else {
-        Left("Invalid csv format: expected 5 fields but found: " + list.length)
+        return Left("Invalid csv format: expected 5 fields but found: " + list.length)
       }
     }
-    Right(listOfServices.toList)
+    if (listOfServices.isEmpty) Left("Empty file!")
+    else Right(listOfServices.toList)
   }
 }

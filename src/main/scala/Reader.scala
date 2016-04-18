@@ -1,3 +1,5 @@
+import model.Environment
+
 import scala.io.StdIn
 import scala.util.{Failure, Success, Try}
 

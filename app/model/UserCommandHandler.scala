@@ -1,8 +1,16 @@
-import model._
+package model
+
+import UserCommand._
 import scalikejdbc._
 import scala.util.{Failure, Success, Try}
 
 object UserCommandHandler {
+
+  Class.forName("com.mysql.jdbc.Driver")
+  ConnectionPool.singleton("jdbc:mysql://localhost:3306/services_catalog", "root", "12345")
+  implicit val session = AutoSession
+
+  scalikejdbc.GlobalSettings.loggingSQLAndTime = new LoggingSQLAndTimeSettings(enabled = false)
 
   def environmentToString(env: Environment): String = {
     env match {
@@ -12,8 +20,7 @@ object UserCommandHandler {
     }
   }
 
-  def handleAddServiceCommand(command: UserCommand.AddService): ServiceResult.AddServiceResult = {
-    val s = new Service(command.host, command.port, command.name, command.holderEmail, command.environment)
+  def handleAddServiceCommand(s: Service):ServiceResult.AddServiceResult = {
     Try(sql" insert into service values (${s.host}, ${s.port}, ${s.name}, ${s.holderEmail} , ${environmentToString(s.environment)})".update().apply()) match {
       case Success(some) =>
         ServiceResult.AddServiceResult(true)
@@ -23,14 +30,15 @@ object UserCommandHandler {
   }
 
   def servicesToBD(services: List[Service]): Boolean = {
+    var allIsGood = true
     for (s <- services) {
       val serv = new Service(s.host, s.port, s.name, s.holderEmail, s.environment)
       Try(sql" insert into service values (${s.host}, ${s.port}, ${s.name}, ${s.holderEmail} , ${environmentToString(s.environment)})".update().apply()) match {
         case Success(some) =>
-        case Failure(_) => false
+        case Failure(_) => allIsGood=false
       }
     }
-    true
+    allIsGood
   }
 
   def handleImportServiceCommand(com: UserCommand.ImportService): ServiceResult.ImportServiceResult = com match {
@@ -44,14 +52,13 @@ object UserCommandHandler {
           if (isSaved)
             ServiceResult.ImportServiceResult(true, "Successfully saved!")
           else
-            ServiceResult.ImportServiceResult(false, "Some services already exist!")
+            ServiceResult.ImportServiceResult(false, "OK but some services already exist!")
       }
     case com: UserCommand.ImportJson =>
-      val services = FormatHandler.jsonToServices(com.content)
-      val isSaved = servicesToBD(services)
-      if (services.isEmpty) ServiceResult.ImportServiceResult(false, "Not possible to parse file")
+      val isSaved = servicesToBD(com.content)
+      if (com.content.isEmpty) ServiceResult.ImportServiceResult(false, "Not possible to parse file")
       else if (isSaved) ServiceResult.ImportServiceResult(true, "Successfully saved!")
-      else ServiceResult.ImportServiceResult(false, "Some services already exist!")
+      else ServiceResult.ImportServiceResult(false, "OK but some services already exist!")
   }
 
   def handleFindServiceCommand(command: FindService): ServiceResult.FindServiceResult = {
@@ -87,12 +94,30 @@ object UserCommandHandler {
     ServiceResult.ShowAllServicesResult(Some(services))
   }
 
-  def handleUserCommand(com: UserCommand): ServiceResult = com match {
-    case com: AddService => handleAddServiceCommand(com)
-    case com: FindService => handleFindServiceCommand(com)
-    case com: UpdateService => handleUpdateServiceCommand(com)
-    case com: DeleteService => handleDeleteServiceCommand(com)
-    case UserCommand.ShowAll => handleShowAllServices
-    case com: ImportService => handleImportServiceCommand(com)
+  def readFindServiceCommand(hostAndPort: String): Option[FindService] = {
+    hostAndPort.split(":").toList match {
+      case host :: port :: Nil => {
+        Try(port.toInt) match {
+          case Success(intPort) if (port.length <= 5) => Some(FindService(host,intPort))
+          case Failure(_) => None
+        }
+      }
+      case _ => None
+    }
+  }
+
+  def readUpdateServiceCommand(updateService: Service, hostToUpdate: String, portToUpdate: Int): UserCommand.UpdateService =
+    UpdateService(hostToUpdate, portToUpdate, updateService.host, updateService.port, updateService.name, updateService.holderEmail, updateService.environment)
+
+  def readDeleteServiceCommand(hostAndPort: String): Option[DeleteService] = {
+    hostAndPort.split(":").toList match {
+      case host :: port :: Nil => {
+        Try(port.toInt) match {
+          case Success(intPort) => Some(DeleteService(host,intPort))
+          case Failure(_) => None
+        }
+      }
+      case _ => None
+    }
   }
 }

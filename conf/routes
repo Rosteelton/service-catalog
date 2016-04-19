@@ -1,8 +1,7 @@
 GET     /*path/                             controllers.Application.untrail(path: String)
 GET     /                                   controllers.Application.hello
+#format depends on accept header (json -> csv -> txt)
 GET     /services                           controllers.Application.showAll
-GET     /services/json                      controllers.Application.showAllAsJson
-GET     /services/csv                       controllers.Application.showAllAsCsv
 DELETE  /services/:hostAndPort              controllers.Application.deleteService(hostAndPort: String)
 GET     /services/:hostAndPort              controllers.Application.findService(hostAndPort:String)
 POST    /services                           controllers.Application.addService
@@ -11,3 +10,4 @@ POST    /services/bulk/csv                  controllers.Application.importCsvFil
 POST    /services/bulk/json                 controllers.Application.importJsonFile
 GET     /services/json/:hostAndPort         controllers.Application.findServiceToJson(hostAndPort: String)
 GET     /services/csv/:hostAndPort          controllers.Application.findServiceToCsv(hostAndPort: String)
+GET     /test                               controllers.Application.test1

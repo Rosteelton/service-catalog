@@ -1,35 +1,38 @@
 package controllers
 
-import play.api.mvc.{Action, Controller}
+import play.api.mvc.{Accepting, Action, Controller}
 import model._
+import model.solovyev.csv.CSV
+import play.api.http.MimeTypes
 import play.api.libs.json.Json
+
 import scala.util.{Failure, Success, Try}
+
 
 object Application extends Controller {
 
   def hello = Action { request =>
-    Ok("Hello! Welcome to service catalog v1.0")
+    val test = "asd#123#12312#123123#Test"
+    CSV.parse[Service](test) match {
+      case Left(err)=>Ok(err)
+      case Right(service) =>
+        val t1 = CSV.toCSV(service)
+        Ok(service.toString+ "\n"+ t1)
+    }
   }
 
   def showAll = Action { request =>
     val result = UserCommandHandler.handleShowAllServices
-    val content = Printer.printServices(result)
-    Ok(content)
-  }
-
-  def showAllAsCsv = Action { request =>
-    val result = UserCommandHandler.handleShowAllServices
-    val content = Printer.printServicesAsCsv(result)
-    Ok(content)
-  }
-
-  def showAllAsJson = Action { request =>
-    val result = UserCommandHandler.handleShowAllServices
-    result.services match {
-      case Some(services) => Ok(Json.toJson(services))
-      case None => Ok("Nothing to show!")
+    val AcceptCsv = Accepting("application/csv")
+    request match {
+      //case req if req.acceptedTypes.toList.length==1 && req.acceptedTypes.toList(0).toString()=="*/*" => Ok(Printer.printServices(result))
+      case Accepts.Json() => Ok(Json.toJson(result.services))
+      case AcceptCsv() => Ok(Printer.printServicesAsCsv(result))
+      case _ => Ok(Printer.printServices(result))
     }
   }
+
+
 
   def deleteService(hostAndPort: String) = Action { request =>
     UserCommandHandler.readDeleteServiceCommand(hostAndPort) match {
@@ -142,4 +145,12 @@ object Application extends Controller {
   def untrail(path: String) = Action {
     MovedPermanently("/" + path)
   }
+
+
+
+  def test1 = Action { request =>
+
+        Ok("ывафывафвы")
+  }
+
 }

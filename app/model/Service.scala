@@ -8,6 +8,9 @@ import scalikejdbc._
 import spray.json.{DefaultJsonProtocol, DeserializationException, JsNumber, JsObject, JsString, JsValue, RootJsonFormat}
 import play.api.libs.functional.syntax._
 import play.api.libs.json
+import solovyev.csv.{Decoder, Encoder}
+
+import scala.util.{Try, Success, Failure}
 
 sealed trait Environment
 
@@ -31,9 +34,6 @@ case class Service(host: String, port: Int, name: String, holderEmail: String, e
 
 object Service {
 
-  //  def get[A: TypeBinder](columnName: ColumnName): A
-  // def get[A](columnName: ColumnName)(implicit binder: TypeBinder[A]): A
-
   implicit val envBinder: TypeBinder[Environment] = new TypeBinder[Environment] {
 
     def fromString(string: String): Environment = string match {
@@ -54,11 +54,11 @@ object Service {
     new Service(rs.string("host"), rs.int("port"), rs.string("name"), rs.string("holderEmail"), rs.get[Environment]("environment"))
 
 
-  def fromStringToEnvironment(string: String): Either[Environment, String] = string match {
-    case "Production" => Left(Environment.Production)
-    case "Test" => Left(Environment.Test)
-    case "Development" => Left(Environment.Test)
-    case _ => Right("Wrong string of environment!")
+  def fromStringToEnvironment(string: String): Either[String, Environment] = string match {
+    case "Production" => Right(Environment.Production)
+    case "Test" => Right(Environment.Test)
+    case "Development" => Right(Environment.Test)
+    case _ => Left("Wrong string of environment!")
   }
 
   def fromEnvironmentToString(environment: Environment): String = environment match {
@@ -70,11 +70,12 @@ object Service {
   implicit val environmentReads: Reads[Environment] = Reads[Environment] {
     case play.api.libs.json.JsString(value) =>
       fromStringToEnvironment(value) match {
-        case Left(some) => JsSuccess(some)
-        case Right(string) => JsError("Wrong string")
+        case Right(some) => JsSuccess(some)
+        case Left(string) => JsError("Wrong string")
       }
     case _ => JsError("Expect string")
   }
+
 
   implicit val environmentWrites: Writes[Environment] = Writes[Environment] {
     environment => json.JsString(fromEnvironmentToString(environment))
@@ -89,42 +90,73 @@ object Service {
       (JsPath \ "environment").read[Environment]
     ) ((host, port, name, holderEmail, environment) => Service(host, port, name, holderEmail, environment))
 
-implicit val serviceWrites: Writes[Service] = (
-  (JsPath \ "host").write[String] and
-    (JsPath \ "port").write[Int] and
-    (JsPath \ "name").write[String] and
-    (JsPath \ "holderEmail").write[String] and
-    (JsPath \ "environment").write[Environment]
-  ) (unlift(Service.unapply))
 
-}
+  implicit val serviceEncoder: Encoder[Service] = new Encoder[Service] {
+    override val defaultDelimiter = "#"
 
-
-object MyJsonProtocol extends DefaultJsonProtocol {
-
-  implicit object ServiceJsonFormat extends RootJsonFormat[Service] {
-
-    def write(s: Service) = JsObject(
-      "host" -> JsString(s.host),
-      "port" -> JsNumber(s.port),
-      "name" -> JsString(s.name),
-      "holderEmail" -> JsString(s.holderEmail),
-      "environment" -> JsString(s.environment.toString)
-    )
-
-    def fromString(string: String) = string match {
-      case "Production" => Environment.Production
-      case "Test" => Environment.Test
-      case "Development" => Environment.Development
+    override def writes(o: Service): String = {
+      o.host + defaultDelimiter + o.port.toString + defaultDelimiter + o.name + defaultDelimiter + o.holderEmail + defaultDelimiter + o.environment.toString
     }
+  }
 
-    def read(value: spray.json.JsValue) = {
-      value.asJsObject.getFields("host", "port", "name", "holderEmail", "environment") match {
-        case Seq(JsString(host), JsNumber(port), JsString(name), JsString(holderEmail), JsString(environment)) =>
-          new Service(host, port.toInt, name, holderEmail, fromString(environment))
-        case _ => throw new DeserializationException("Service expected")
+  implicit val serviceDecoder: Decoder[Service] = new Decoder[Service] {
+    override val defaultDelimiter = "#"
+    override def reads(str: String): Either[String, Service] = {
+      val list = str.split(defaultDelimiter).toList
+      if (list.length == 5) {
+        fromStringToEnvironment(list(4)) match {
+          case Left(err) => Left(err)
+          case Right(some) =>
+            Try(new Service(list.head.trim, list(1).trim.toInt, list(2).trim, list(3).trim, some)) match {
+              case Success(serv) => Right(serv)
+              case Failure(e) => Left(e.getMessage)
+            }
+        }
+      } else {
+        return Left("Invalid csv format: expected 5 fields but found: " + list.length)
       }
     }
   }
 
+    implicit val serviceWrites: Writes[Service] = (
+      (JsPath \ "host").write[String] and
+        (JsPath \ "port").write[Int] and
+        (JsPath \ "name").write[String] and
+        (JsPath \ "holderEmail").write[String] and
+        (JsPath \ "environment").write[Environment]
+      ) (unlift(Service.unapply))
+
+
+
+
+  object MyJsonProtocol extends DefaultJsonProtocol {
+
+    implicit object ServiceJsonFormat extends RootJsonFormat[Service] {
+
+      def write(s: Service) = JsObject(
+        "host" -> JsString(s.host),
+        "port" -> JsNumber(s.port),
+        "name" -> JsString(s.name),
+        "holderEmail" -> JsString(s.holderEmail),
+        "environment" -> JsString(s.environment.toString)
+      )
+
+      def fromString(string: String) = string match {
+        case "Production" => Environment.Production
+        case "Test" => Environment.Test
+        case "Development" => Environment.Development
+      }
+
+      def read(value: spray.json.JsValue) = {
+        value.asJsObject.getFields("host", "port", "name", "holderEmail", "environment") match {
+          case Seq(JsString(host), JsNumber(port), JsString(name), JsString(holderEmail), JsString(environment)) =>
+            new Service(host, port.toInt, name, holderEmail, fromString(environment))
+          case _ => throw new DeserializationException("Service expected")
+        }
+      }
+    }
+
+  }
+
 }
+

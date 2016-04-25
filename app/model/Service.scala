@@ -1,7 +1,9 @@
 package model
 
 import java.sql.ResultSet
-
+import play.api.data._
+import play.api.data.Forms._
+import play.api.data.format.Formatter
 import model.Environment.{Development, Production, Test}
 import play.api.libs.json.{JsValue, _}
 import scalikejdbc._
@@ -25,7 +27,6 @@ object Environment {
 }
 
 case class Service(host: String, port: Int, name: String, holderEmail: String, environment: Environment) {
-
   override def toString: String = {
     val tmp = this.environment.toString
     String.format("%-40s%-10s%-40s%-40s%11s", host, port: Integer, name, holderEmail, tmp)
@@ -33,6 +34,40 @@ case class Service(host: String, port: Int, name: String, holderEmail: String, e
 }
 
 object Service {
+
+  implicit def formatEnvironment: Formatter[Environment] = new Formatter[Environment] {
+
+    override def unbind(key: String, value: Environment): Map[String, String] = Map(key -> value.toString)
+
+    override def bind(key: String, data: Map[String, String]): Either[Seq[FormError], Environment] = {
+      data.get(key).get match {
+        case "Development" => Right(Environment.Development)
+        case "Test" => Right(Environment.Test)
+        case "Production" => Right(Environment.Production)
+        case _ => Left(Seq(FormError(key,"wrong environment",Nil)))
+      }
+    }
+  }
+
+  val environmentMapping: Mapping[Environment] = of[Environment]
+
+
+  val deleteFindServiceForm = Form("host:port" -> nonEmptyText(maxLength = 40))
+
+  val createServiceForm = Form(
+    mapping(
+      "host" -> nonEmptyText(maxLength = 40),
+      "port" -> number(max = 99999),
+      "name" -> nonEmptyText(maxLength = 40),
+      "holderEmail" -> email,
+      "environment" -> environmentMapping
+    )(Service.apply)(Service.unapply)
+  )
+
+
+
+
+
 
   implicit val envBinder: TypeBinder[Environment] = new TypeBinder[Environment] {
 

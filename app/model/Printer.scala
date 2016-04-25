@@ -5,8 +5,8 @@ import ServiceResult._
 object Printer {
 
   def printAddServiceResult(res: AddServiceResult): String = {
-    if (res.success) "Service successfully added!"
-    else "Service already existed!"
+    if (res.success) "Successfully added!"
+    else "Already existed!"
   }
 
   def printUpdateServiceResult(res: UpdateServiceResult): String = res match {
@@ -15,8 +15,8 @@ object Printer {
   }
 
   def printDeleteServiceResult(res: DeleteServiceResult): String = {
-    if (res.deleteSuccess) " successfully deleted!"
-    else " hasn't been found!"
+    if (res.deleteSuccess) "Service successfully deleted!"
+    else "Service hasn't been found!"
   }
 
   def printImportServiceResult(res: ImportServiceResult): Unit = {

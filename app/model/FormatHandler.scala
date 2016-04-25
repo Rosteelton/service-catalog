@@ -13,56 +13,55 @@ import scala.util.{Failure, Success, Try}
 
 object FormatHandler {
 
-//  def saveJsonFile(services: List[Service]): (String, Boolean) = {
-//    val data = Calendar.getInstance().getTime
-//    val dateFormat = new SimpleDateFormat("dd.MM.yyyy_H:mm:ss")
-//    val file = new File("/home/solovyev/Documents/jsonfiles/" + dateFormat.format(data) + ".json")
-//    val bw = new BufferedWriter(new FileWriter(file))
-//    val jsonDoc = services.toJson.prettyPrint
-//    Try(bw.write(jsonDoc)) match {
-//      case Success(some) =>
-//        bw.close()
-//        (dateFormat.format(data), true)
-//      case Failure(_) =>
-//        bw.close()
-//        ("fail", false)
-//    }
-//  }
-//
-//  def saveCsvFile(services: List[Service]): (String, Boolean) = {
-//    val data = Calendar.getInstance().getTime
-//    val dateFormat = new SimpleDateFormat("dd.MM.yyyy_H:mm:ss")
-//    val file = new File("/home/solovyev/Documents/csvfiles/" + dateFormat.format(data) + ".csv")
-//    val bw = new BufferedWriter(new FileWriter(file))
-//    Try(for (service <- services) {
-//      bw.write(service.host + ";" + service.port + ";" + service.name + ";" + service.holderEmail + ";" + service.environment.toString + "\n")
-//    }) match {
-//      case Success(some) =>
-//        bw.close()
-//        (dateFormat.format(data), true)
-//      case Failure(_) =>
-//        bw.close()
-//        ("fail", false)
-//    }
-//  }
+  //  def saveJsonFile(services: List[Service]): (String, Boolean) = {
+  //    val data = Calendar.getInstance().getTime
+  //    val dateFormat = new SimpleDateFormat("dd.MM.yyyy_H:mm:ss")
+  //    val file = new File("/home/solovyev/Documents/jsonfiles/" + dateFormat.format(data) + ".json")
+  //    val bw = new BufferedWriter(new FileWriter(file))
+  //    val jsonDoc = services.toJson.prettyPrint
+  //    Try(bw.write(jsonDoc)) match {
+  //      case Success(some) =>
+  //        bw.close()
+  //        (dateFormat.format(data), true)
+  //      case Failure(_) =>
+  //        bw.close()
+  //        ("fail", false)
+  //    }
+  //  }
+  //
+  //  def saveCsvFile(services: List[Service]): (String, Boolean) = {
+  //    val data = Calendar.getInstance().getTime
+  //    val dateFormat = new SimpleDateFormat("dd.MM.yyyy_H:mm:ss")
+  //    val file = new File("/home/solovyev/Documents/csvfiles/" + dateFormat.format(data) + ".csv")
+  //    val bw = new BufferedWriter(new FileWriter(file))
+  //    Try(for (service <- services) {
+  //      bw.write(service.host + ";" + service.port + ";" + service.name + ";" + service.holderEmail + ";" + service.environment.toString + "\n")
+  //    }) match {
+  //      case Success(some) =>
+  //        bw.close()
+  //        (dateFormat.format(data), true)
+  //      case Failure(_) =>
+  //        bw.close()
+  //        ("fail", false)
+  //    }
+  //  }
 
   def servicesToCsv(services: List[Service]): String = {
     val csvServices = new ListBuffer[String]
-       for (service <- services) {
-      //csvServices.append(service.host + ";" + service.port + ";" + service.name + ";" + service.holderEmail + ";" + service.environment.toString)
-         csvServices.append(CSV.toCSV(service))
+    for (service <- services) {
+      csvServices.append(CSV.toCSV(service))
     }
-    csvServices.toList.reduceLeft((str1,str2) => str1+"\n"+str2)
+    csvServices.toList.reduceLeft((str1, str2) => str1 + "\n" + str2)
   }
 
-//  def jsonToServices(content: String): List[Service] = {
-//    Try(content.parseJson) match {
-//      case Success(js) =>
-//        js.convertTo[List[Service]]
-//      case Failure(_) =>
-//        List.empty[Service]
-//    }
-//  }
+  //  def jsonToServices(content: String): List[Service] = {
+  //    Try(content.parseJson) match {
+  //      case Success(js) =>
+  //        js.convertTo[List[Service]]
+  //      case Failure(_) =>
+  //        List.empty[Service]
+  //    }
+  //  }
 
   def csvToServices(content: String): Either[String, List[Service]] = {
     var listOfServices = new ListBuffer[Service]

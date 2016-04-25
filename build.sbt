@@ -12,5 +12,7 @@ libraryDependencies ++= Seq(
   "org.scalikejdbc" %% "scalikejdbc-config" % "2.3.5",
   "org.scalikejdbc" %% "scalikejdbc-play-initializer" % "2.5.0"
 )
+routesGenerator := StaticRoutesGenerator
+
 
 enablePlugins(PlayScala)

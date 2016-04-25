@@ -1,13 +1,23 @@
-GET     /*path/                             controllers.Application.untrail(path: String)
-GET     /                                   controllers.Application.hello
+GET     /*path/                             controllers.ServiceCatalog.untrail(path: String)
+GET     /                                   controllers.ServiceCatalog.hello
+
 #format depends on accept header (json -> csv -> txt)
-GET     /services                           controllers.Application.showAll
-DELETE  /services/:hostAndPort              controllers.Application.deleteService(hostAndPort: String)
-GET     /services/:hostAndPort              controllers.Application.findService(hostAndPort:String)
-POST    /services                           controllers.Application.addService
-PUT     /services/:hostAndPort              controllers.Application.updateService(hostAndPort: String)
-POST    /services/bulk/csv                  controllers.Application.importCsvFile
-POST    /services/bulk/json                 controllers.Application.importJsonFile
-GET     /services/json/:hostAndPort         controllers.Application.findServiceToJson(hostAndPort: String)
-GET     /services/csv/:hostAndPort          controllers.Application.findServiceToCsv(hostAndPort: String)
-GET     /test                               controllers.Application.test1
+GET     /services                           controllers.ServiceCatalog.showAll
+
+DELETE  /services/:hostAndPort              controllers.ServiceCatalog.deleteService(hostAndPort: String)
+GET     /services/:hostAndPort              controllers.ServiceCatalog.findService(hostAndPort:String)
+POST    /services                           controllers.ServiceCatalog.addService
+PUT     /services/:hostAndPort              controllers.ServiceCatalog.updateService(hostAndPort: String)
+POST    /services/bulk/csv                  controllers.ServiceCatalog.importCsvFile
+POST    /services/bulk/json                 controllers.ServiceCatalog.importJsonFile
+GET     /services/json/:hostAndPort         controllers.ServiceCatalog.findServiceToJson(hostAndPort: String)
+GET     /services/csv/:hostAndPort          controllers.ServiceCatalog.findServiceToCsv(hostAndPort: String)
+
+#test UI
+GET         /test/services                  @controllers.TestServiceCatalog.serviceHandler
+POST        /test/services                  @controllers.TestServiceCatalog.createService
+POST        /test/services/delete           @controllers.TestServiceCatalog.deleteService
+POST        /test/services/find             @controllers.TestServiceCatalog.findService
+
+# Map static resources from the /public folder to the /assets URL path
+GET         /assets/*file        controllers.Assets.at(path="/public", file)

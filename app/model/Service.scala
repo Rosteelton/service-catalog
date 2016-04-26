@@ -35,6 +35,11 @@ case class Service(host: String, port: Int, name: String, holderEmail: String, e
 
 object Service {
 
+
+
+
+
+
   implicit def formatEnvironment: Formatter[Environment] = new Formatter[Environment] {
 
     override def unbind(key: String, value: Environment): Map[String, String] = Map(key -> value.toString)
@@ -65,13 +70,17 @@ object Service {
   )
 
 
-
+  def environmentFromString(string: String): Environment = string match {
+    case "Production" => Environment.Production
+    case "Test" => Environment.Test
+    case "Development" => Environment.Development
+  }
 
 
 
   implicit val envBinder: TypeBinder[Environment] = new TypeBinder[Environment] {
 
-    def fromString(string: String): Environment = string match {
+    def environmentFromString(string: String): Environment = string match {
       case "Production" => Environment.Production
       case "Test" => Environment.Test
       case "Development" => Environment.Development
@@ -79,10 +88,10 @@ object Service {
 
 
     override def apply(rs: ResultSet, columnIndex: Int): Environment =
-      fromString(rs.getString(columnIndex))
+      environmentFromString(rs.getString(columnIndex))
 
     override def apply(rs: ResultSet, columnLabel: String): Environment =
-      fromString(rs.getString(columnLabel))
+      environmentFromString(rs.getString(columnLabel))
   }
 
   def apply(rs: WrappedResultSet): Service =

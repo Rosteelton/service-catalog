@@ -10,7 +10,8 @@ libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.1.3",
   "io.spray" %% "spray-json" % "1.3.2",
   "org.scalikejdbc" %% "scalikejdbc-config" % "2.3.5",
-  "org.scalikejdbc" %% "scalikejdbc-play-initializer" % "2.5.0"
+  "org.scalikejdbc" %% "scalikejdbc-play-initializer" % "2.5.0",
+  "com.adrianhurt" %% "play-bootstrap" % "1.0-P25-B3"
 )
 routesGenerator := StaticRoutesGenerator
 

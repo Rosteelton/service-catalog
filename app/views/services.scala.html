@@ -1,0 +1,144 @@
+@import model.Service, b3.vertical.fieldConstructor
+
+@(services: List[Service], serviceForm: Form[Service], deleteFindServiceForm: Form[String], msg: String, handledService: Service)(implicit message: Messages)
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Services</title>
+            <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+            <!-- Optional theme -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+
+            <!-- Latest compiled and minified JavaScript -->
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+        <style>
+        .order2 {
+            display: inline-block;
+            border-left: 1px solid;
+            border-right: 1px solid;
+            margin-left: 20px;
+            padding-left: 20px;
+            padding-right: 20px;
+            vertical-align: top;
+            white-space: nowrap;
+        }
+
+        .order3 {
+            display: inline-block;
+            margin-left: 20px;
+            vertical-align: top;
+            white-space: nowrap;
+        }
+
+        .order1 {
+            display: inline-block;
+            vertical-align: top;
+            margin-left: 20px;
+            white-space: nowrap;
+        }
+
+        .orderspan{
+            white-space: nowrap;
+        }
+
+        table {
+
+            border: 3px solid;
+            border-collapse: separate;
+        }
+
+        th {
+            border-style: solid;
+            border-width: 0 0 3px 0;
+        }
+
+        #help {
+            margin-top: 50px;
+        }
+
+        h1 {
+            text-decoration: underline;
+            margin-bottom: 20px;
+
+        }
+        </style>
+    </head>
+    <body>
+
+        <span class="orderspan">
+
+        <div class="order1">
+            <h1>Full list of services</h1>
+            <table class="table" cellspacing="0" cellpadding="10">
+                <thead>
+                    <tr align="center">
+                        <th>HOST</th><th>PORT</th><th>NAME</th><th>HOLDER EMAIL</th><th>ENVIRONMENT</th><th></th>
+                    </tr>
+                </thead>
+                @for(s <- services) {
+                    <tr @if(handledService != null && handledService.port == s.port && handledService.host == s.host) {
+                        class="success}">
+                        <td>@s.host</td> <td>@s.port</td> <td>@s.name</td> <td>@s.holderEmail</td> <td>@s.environment</td>
+                        <form>
+                            <td>
+                                <input class="btn btn-default" formmethod="post" formaction="@routes.TestServiceCatalog.deleteServiceWithTable(s.host + ":" + s.port)" type="submit" value="Delete">
+                                <input class="btn btn-default" formmethod="get" formaction="@routes.TestServiceCatalog.fillService(s.host, s.port, s.name, s.holderEmail, s.environment.toString)" type="submit" value="Update">
+                            </td>
+
+                        </form>
+                    </tr>
+                }
+                </table>
+        </div>
+        <div class="order2">
+            <h1>Add Service or Update</h1>
+            <form>
+                @if(services.contains(handledService) && msg == "Please change data of this service") {
+                    @b3.text(serviceForm("host"), '_label -> "Host", 'placeholder -> "some.qiwi.com", 'readonly -> true)
+                    @b3.text(serviceForm("port"), '_label -> "Port", 'placeholder -> "8080", 'readonly -> true)
+                } else {
+                    @b3.text(serviceForm("host"), '_label -> "Host", 'placeholder -> "some.qiwi.com")
+                    @b3.text(serviceForm("port"), '_label -> "Port", 'placeholder -> "8080")
+                }
+                @b3.text(serviceForm("name"), '_label -> "Service name", 'placeholder -> "QIWI API")
+                @b3.text(serviceForm("holderEmail"), '_label -> "Service holder email", 'placeholder -> "some@mail.ru")
+                @b3.select(serviceForm("environment"), options = Seq(
+                    "Test" -> "Test",
+                    "Development" -> "Development",
+                    "Production" -> "Production"), '_label -> "Environment")
+                <input class="btn btn-default" formmethod="post" formaction="@routes.TestServiceCatalog.createService()" type="submit" value="Add Service">
+                <input class="btn btn-default" formmethod="post" formaction="@routes.TestServiceCatalog.updateService()" type="submit" value="Update Service">
+            </form>
+            <h1>Delete or Find service</h1>
+            <form>
+                @b3.text(deleteFindServiceForm("host:port"), '_label -> "HOST:PORT", 'placeholder -> "some.qiwi.com:1234")
+                <input class="btn btn-default" formmethod="post" formaction="@routes.TestServiceCatalog.deleteService()" type="submit" value="Delete Service">
+                <input class="btn btn-default" formmethod="get" formaction="@routes.TestServiceCatalog.findService()" type="submit" value="Find Service">
+            </form>
+
+        </div>
+        <div class="order3">
+        @if(msg != "msg") {
+            <div class="alert alert-info" role="alert" id="help" align="center">
+                <h2>
+                @msg
+                </h2>
+                @if(handledService != null) {
+                    <table class="table" cellspacing="0" cellpadding="10">
+                        <thead>
+                            <tr align="center"><th>HOST</th><th>PORT</th><th>NAME</th><th>HOLDER EMAIL</th><th>
+                                ENVIRONMENT</th></tr>
+                        </thead>
+                        <tr><td>@handledService.host</td> <td>@handledService.port</td> <td>@handledService.name</td> <td>@handledService.holderEmail</td> <td>@handledService.environment</td></tr>
+                    </table>
+                }
+            </div>
+        }
+        </div>
+        </span>
+    </body>
+</html>

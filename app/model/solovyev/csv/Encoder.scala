@@ -33,9 +33,6 @@ object DefaultEncoder {
    // }
   //}
 
- // case class CsvTable(rows: List[CsvRow])
-//  case class CsvRow(columns: List[CsvColumn])
- // case class CsvColumn(value: String)
 }
 
 

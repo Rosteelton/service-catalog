@@ -11,12 +11,10 @@ import scala.util.{Failure, Success, Try}
 
 class TestServiceCatalog @Inject()(val messagesApi: MessagesApi) extends Controller with I18nSupport {
 
-
   def serviceHandler = Action { implicit request =>
     val result = UserCommandHandler.handleShowAllServices
     Ok(views.html.services(result.services.get, Service.createServiceForm, Service.deleteFindServiceForm, "msg", null))
   }
-
 
   def createService = Action { implicit request =>
     Service.createServiceForm.bindFromRequest.fold(
@@ -31,7 +29,6 @@ class TestServiceCatalog @Inject()(val messagesApi: MessagesApi) extends Control
       }
     )
   }
-
 
   def makeResponseWithMsg(msg: String) = {
     val result = UserCommandHandler.handleShowAllServices
@@ -74,7 +71,6 @@ class TestServiceCatalog @Inject()(val messagesApi: MessagesApi) extends Control
     }
   }
 
-
   def findService = Action { implicit request =>
     Service.deleteFindServiceForm.bindFromRequest.fold(
       err => {
@@ -110,13 +106,10 @@ class TestServiceCatalog @Inject()(val messagesApi: MessagesApi) extends Control
     }
   }
 
-
   def fillService(host: String, port: Int, name: String, email: String, environment: String) = Action { implicit request =>
     val filledForm = Service.createServiceForm.fill(Service(host,port,name,email,Service.environmentFromString(environment)))
     val handle = filledForm.value.get
     val result = UserCommandHandler.handleShowAllServices
     Ok(views.html.services(result.services.get, filledForm, Service.deleteFindServiceForm, "Please change data of this service", handle))
   }
-
-
 }

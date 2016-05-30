@@ -12,8 +12,9 @@ libraryDependencies ++= Seq(
   "org.scalikejdbc" %% "scalikejdbc-config" % "2.3.5",
   "org.scalikejdbc" %% "scalikejdbc-play-initializer" % "2.5.0",
   "com.adrianhurt" %% "play-bootstrap" % "1.0-P25-B3"
+
 )
 routesGenerator := StaticRoutesGenerator
 
 
-enablePlugins(PlayScala)
+lazy val root = (project in file(".")).enablePlugins(PlayScala, SbtWeb)

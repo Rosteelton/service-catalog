@@ -35,11 +35,6 @@ case class Service(host: String, port: Int, name: String, holderEmail: String, e
 
 object Service {
 
-
-
-
-
-
   implicit def formatEnvironment: Formatter[Environment] = new Formatter[Environment] {
 
     override def unbind(key: String, value: Environment): Map[String, String] = Map(key -> value.toString)
